@@ -126,7 +126,7 @@ SINGLE_BATTLE_TEST("Future Sight receives STAB from party mon (Gen 5+)")
         ANIMATION(ANIM_TYPE_MOVE, MOVE_FUTURE_SIGHT, player);
         HP_BAR(opponent, captureDamage: &futureSightDmg);
     } THEN {
-        EXPECT_MUL_EQ(seedFlareDmg, Q_4_12(1.5), futureSightDmg);
+        EXPECT_MUL_EQ(seedFlareDmg, Q_4_12(1.3), futureSightDmg);
     }
 }
 

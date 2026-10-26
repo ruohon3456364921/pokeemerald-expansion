@@ -270,8 +270,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_ILLUMINATE] =
     {
         .name = _("发光"),
-        .description = COMPOUND_STRING("命中率不会被降低"),
-        .aiRating = 0,
+        .description = COMPOUND_STRING("无视闪避修正，自身闪避无法提升"),
+        .aiRating = 5,
         .breakable = TRUE,
     },
 
@@ -390,8 +390,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_KEEN_EYE] =
     {
         .name = _("锐利目光"),
-        .description = COMPOUND_STRING("命中率不会被降低"),
-        .aiRating = 1,
+        .description = COMPOUND_STRING("命中不被降低，自身招式命中×1.2"),
+        .aiRating = 5,
         .breakable = TRUE,
     },
 
@@ -496,29 +496,29 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_OVERGROW] =
     {
         .name = _("茂盛"),
-        .description = COMPOUND_STRING("HP低时强化草属性招式"),
-        .aiRating = 5,
+        .description = COMPOUND_STRING("HP越低，对应招式威力越高。"),
+        .aiRating = 6,
     },
 
     [ABILITY_BLAZE] =
     {
         .name = _("猛火"),
-        .description = COMPOUND_STRING("HP低时强化火属性招式"),
-        .aiRating = 5,
+        .description = COMPOUND_STRING("HP越低，对应招式威力越高。"),
+        .aiRating = 6,
     },
 
     [ABILITY_TORRENT] =
     {
         .name = _("激流"),
-        .description = COMPOUND_STRING("HP低时强化水属性招式"),
-        .aiRating = 5,
+        .description = COMPOUND_STRING("HP越低，对应招式威力越高。"),
+        .aiRating = 6,
     },
 
     [ABILITY_SWARM] =
     {
         .name = _("虫之预感"),
-        .description = COMPOUND_STRING("HP低时强化虫属性招式"),
-        .aiRating = 5,
+        .description = COMPOUND_STRING("HP越低，对应招式威力越高。"),
+        .aiRating = 6,
     },
 
     [ABILITY_ROCK_HEAD] =
@@ -1459,8 +1459,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_EMERGENCY_EXIT] =
     {
         .name = _("危险回避"),
-        .description = COMPOUND_STRING("HP变为一半时会回避危险"),
-        .aiRating = 3,
+        .description = COMPOUND_STRING("换人招式先制，受击由替补代受"),
+        .aiRating = 6,
     },
 
     [ABILITY_WATER_COMPACTION] =

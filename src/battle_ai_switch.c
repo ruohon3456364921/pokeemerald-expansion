@@ -779,7 +779,7 @@ static bool32 ShouldSwitchIfBadlyStatused(struct SwitchAiContext *switchContext)
                 && gAiLogicData->abilities[switchContext->opposingBattler] != ABILITY_UNAWARE
                 && gAiLogicData->abilities[switchContext->opposingBattler] != ABILITY_KEEN_EYE
                 && gAiLogicData->abilities[switchContext->opposingBattler] != ABILITY_MINDS_EYE
-                && (GetConfig(B_ILLUMINATE_EFFECT) >= GEN_9 && gAiLogicData->abilities[switchContext->opposingBattler] != ABILITY_ILLUMINATE)
+                && gAiLogicData->abilities[switchContext->opposingBattler] != ABILITY_ILLUMINATE
                 && !gBattleMons[switchContext->battler].volatiles.foresight
                 && !gBattleMons[switchContext->battler].volatiles.miracleEye)
                 switchMon = FALSE;

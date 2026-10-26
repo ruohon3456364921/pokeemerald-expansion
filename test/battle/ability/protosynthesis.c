@@ -335,22 +335,22 @@ SINGLE_BATTLE_TEST("Protosynthesis damage calculation is correct")
     s16 dmg;
     s16 expectedDamage;
 
-    PARAMETRIZE { expectedDamage = 127; }
-    PARAMETRIZE { expectedDamage = 126; }
-    PARAMETRIZE { expectedDamage = 124; }
-    PARAMETRIZE { expectedDamage = 123; }
-    PARAMETRIZE { expectedDamage = 121; }
-    PARAMETRIZE { expectedDamage = 120; }
-    PARAMETRIZE { expectedDamage = 118; }
-    PARAMETRIZE { expectedDamage = 118; }
-    PARAMETRIZE { expectedDamage = 117; }
-    PARAMETRIZE { expectedDamage = 115; }
-    PARAMETRIZE { expectedDamage = 114; }
-    PARAMETRIZE { expectedDamage = 112; }
     PARAMETRIZE { expectedDamage = 111; }
     PARAMETRIZE { expectedDamage = 109; }
-    PARAMETRIZE { expectedDamage = 109; }
     PARAMETRIZE { expectedDamage = 108; }
+    PARAMETRIZE { expectedDamage = 107; }
+    PARAMETRIZE { expectedDamage = 105; }
+    PARAMETRIZE { expectedDamage = 104; }
+    PARAMETRIZE { expectedDamage = 103; }
+    PARAMETRIZE { expectedDamage = 103; }
+    PARAMETRIZE { expectedDamage = 101; }
+    PARAMETRIZE { expectedDamage = 100; }
+    PARAMETRIZE { expectedDamage = 99; }
+    PARAMETRIZE { expectedDamage = 98; }
+    PARAMETRIZE { expectedDamage = 96; }
+    PARAMETRIZE { expectedDamage = 95; }
+    PARAMETRIZE { expectedDamage = 95; }
+    PARAMETRIZE { expectedDamage = 94; }
 
     GIVEN {
         ASSUME(GetMoveCategory(MOVE_CLOSE_COMBAT) == DAMAGE_CATEGORY_PHYSICAL);

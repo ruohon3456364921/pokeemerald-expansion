@@ -5733,6 +5733,9 @@ static s32 AI_CalcAdditionalEffectScore(enum BattlerId battlerAtk, enum BattlerI
                         stage = -1 * stage;
 
                     stage = AI_GetAdjustedStatStage(battlerAtk, move, stage);
+                    if (gAiLogicData->abilities[battlerAtk] == ABILITY_ILLUMINATE
+                     && stat == STAT_EVASION && stage > 0)
+                        continue;
 
                     if (stage < 0)
                         continue;

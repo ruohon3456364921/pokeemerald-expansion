@@ -3222,6 +3222,8 @@ static void Cmd_switchindataupdate(void)
 
     battler = GetBattlerForBattleScript(cmd->battler);
     oldData = gBattleMons[battler];
+    bool32 eeTransferPending = gBattleStruct->battlerState[battler].eeTransferPending;
+    u32 eeTransferDamage = gBattleStruct->battlerState[battler].eeTransferDamage;
     monData = (u8 *)(&gBattleMons[battler]);
 
     for (i = 0; i < sizeof(struct BattlePokemon); i++)
@@ -3276,6 +3278,18 @@ static void Cmd_switchindataupdate(void)
     gBattleScripting.battler = battler;
 
     PREPARE_MON_NICK_BUFFER(gBattleTextBuff1, battler, gBattlerPartyIndexes[battler]);
+
+    // Emergency Exit: the replacement takes the damage the exiting mon avoided.
+    if (eeTransferPending && eeTransferDamage > 0)
+    {
+        if (gBattleMons[battler].hp > eeTransferDamage)
+            gBattleMons[battler].hp -= eeTransferDamage;
+        else
+            gBattleMons[battler].hp = 0;
+
+        BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
+        MarkBattlerForControllerExec(battler);
+    }
 
     gBattlescriptCurrInstr = cmd->nextInstr;
 }

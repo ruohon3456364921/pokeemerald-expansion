@@ -177,7 +177,7 @@ DOUBLE_BATTLE_TEST("Spread Move: Heals the correct amount from all Pokemon")
 
     GIVEN {
         ASSUME(MoveHasAdditionalEffect(MOVE_PARABOLIC_CHARGE, MOVE_EFFECT_ABSORB));
-        PLAYER(SPECIES_RAICHU) { HP(1); }
+        PLAYER(SPECIES_RAICHU) { MaxHP(999); HP(1); }
         PLAYER(SPECIES_SQUIRTLE);
         OPPONENT(SPECIES_SQUIRTLE);
         OPPONENT(SPECIES_SQUIRTLE);

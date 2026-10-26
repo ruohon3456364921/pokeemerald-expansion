@@ -67,3 +67,6 @@ tools/aif2pcm/aif2pcm
 python_tools/src/~$文本.xlsx
 __pycache__
 .map_version
+
+# editor local history
+.history/

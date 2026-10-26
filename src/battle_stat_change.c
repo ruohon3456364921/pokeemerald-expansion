@@ -369,6 +369,11 @@ static enum StatChangeResult IncreaseStat(struct BattleCalcValues *cv, struct St
     u32 currStage = gBattleMons[cv->battlerDef].statStages[st->stat];
     bool32 isMaxStage = st->stage >= 12;
 
+    // Illuminate blocks any evasion increase on its own battler.
+    if (cv->abilities[cv->battlerDef] == ABILITY_ILLUMINATE
+     && st->stat == STAT_EVASION && st->stage > 0)
+        return STAT_CHANGE_DIDNT_WORK;
+
     PREPARE_STAT_BUFFER(gBattleTextBuff1, st->stat);
 
     if (currStage == MAX_STAT_STAGE - 1)
@@ -819,8 +824,6 @@ static bool32 AbilityPreventsSpecificStatDrop(enum Ability ability, enum Stat st
     switch (ability)
     {
     case ABILITY_ILLUMINATE:
-        if (B_ILLUMINATE_EFFECT < GEN_9)
-            return FALSE;
     case ABILITY_KEEN_EYE:
     case ABILITY_MINDS_EYE:
         return stat == STAT_ACC;

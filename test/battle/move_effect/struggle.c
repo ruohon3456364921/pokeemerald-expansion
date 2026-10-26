@@ -135,7 +135,7 @@ SINGLE_BATTLE_TEST("Struggle does not receive STAB from Normal-type users")
         ANIMATION(ANIM_TYPE_MOVE, MOVE_STRUGGLE, player);
         HP_BAR(opponent, captureDamage: &struggleDamage);
     } THEN {
-        EXPECT_MUL_EQ(struggleDamage, Q_4_12(1.5), cutDamage);
+        EXPECT_MUL_EQ(struggleDamage, Q_4_12(1.6), cutDamage);
     }
 }
 

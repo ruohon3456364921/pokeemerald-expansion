@@ -6842,6 +6842,22 @@ static inline uq4_12_t ApplyDefensiveBadgeBoost(uq4_12_t modifier, enum BattlerI
     return modifier;
 }
 
+// Overgrow/Blaze/Torrent/Swarm: the lower the HP, the higher the type boost.
+// hp * 4 vs maxHP * 3/2/1 avoids integer-division truncation at the thresholds.
+static inline uq4_12_t GetHpBasedTypeBoostModifier(enum BattlerId battler)
+{
+    u32 hp = gBattleMons[battler].hp;
+    u32 maxHP = gBattleMons[battler].maxHP;
+
+    if (hp * 4 > maxHP * 3) // HP > 3/4
+        return UQ_4_12(1.1);
+    if (hp * 4 > maxHP * 2) // HP > 1/2
+        return UQ_4_12(1.3);
+    if (hp * 4 > maxHP)     // HP > 1/4
+        return UQ_4_12(1.5);
+    return UQ_4_12(1.66);   // HP <= 1/4
+}
+
 static inline u32 CalcAttackStat(struct DamageContext *ctx)
 {
     u8 atkStage;
@@ -6941,20 +6957,20 @@ static inline u32 CalcAttackStat(struct DamageContext *ctx)
             modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
         break;
     case ABILITY_SWARM:
-        if (moveType == TYPE_BUG && gBattleMons[battlerAtk].hp <= (gBattleMons[battlerAtk].maxHP / 3))
-            modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
+        if (moveType == TYPE_BUG)
+            modifier = uq4_12_multiply_half_down(modifier, GetHpBasedTypeBoostModifier(battlerAtk));
         break;
     case ABILITY_TORRENT:
-        if (moveType == TYPE_WATER && gBattleMons[battlerAtk].hp <= (gBattleMons[battlerAtk].maxHP / 3))
-            modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
+        if (moveType == TYPE_WATER)
+            modifier = uq4_12_multiply_half_down(modifier, GetHpBasedTypeBoostModifier(battlerAtk));
         break;
     case ABILITY_BLAZE:
-        if (moveType == TYPE_FIRE && gBattleMons[battlerAtk].hp <= (gBattleMons[battlerAtk].maxHP / 3))
-            modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
+        if (moveType == TYPE_FIRE)
+            modifier = uq4_12_multiply_half_down(modifier, GetHpBasedTypeBoostModifier(battlerAtk));
         break;
     case ABILITY_OVERGROW:
-        if (moveType == TYPE_GRASS && gBattleMons[battlerAtk].hp <= (gBattleMons[battlerAtk].maxHP / 3))
-            modifier = uq4_12_multiply_half_down(modifier, UQ_4_12(1.5));
+        if (moveType == TYPE_GRASS)
+            modifier = uq4_12_multiply_half_down(modifier, GetHpBasedTypeBoostModifier(battlerAtk));
         break;
     case ABILITY_PLUS:
         if (IsBattleMoveSpecial(move))
@@ -7334,6 +7350,29 @@ static inline uq4_12_t GetParentalBondModifier(enum BattlerId battlerAtk)
     return B_PARENTAL_BOND_DMG >= GEN_7 ? UQ_4_12(0.25) : UQ_4_12(0.5);
 }
 
+// Counts the attacker's distinct types; TYPE_MYSTERY slots are ignored.
+// Tera is ignored on purpose: that path uses GetTeraMultiplier() instead.
+static u32 GetBattlerTypeCount(enum BattlerId battler)
+{
+    enum Type types[3];
+    u32 i, j, count = 0;
+
+    GetBattlerTypes(battler, TRUE, types);
+    for (i = 0; i < 3; i++)
+    {
+        if (types[i] == TYPE_MYSTERY)
+            continue;
+        for (j = 0; j < i; j++)
+        {
+            if (types[j] == types[i])
+                break;
+        }
+        if (j == i)
+            count++;
+    }
+    return count;
+}
+
 static inline uq4_12_t GetSameTypeAttackBonusModifier(struct DamageContext *ctx)
 {
     if (ctx->moveType != TYPE_MYSTERY)
@@ -7341,7 +7380,12 @@ static inline uq4_12_t GetSameTypeAttackBonusModifier(struct DamageContext *ctx)
         if ((IS_BATTLER_OF_TYPE(ctx->battlerAtk, ctx->moveType) && ctx->move != MOVE_STRUGGLE)
          || (gBattleStruct->pledgeState == PLEDGE_COMBO_ATTACK && IS_BATTLER_OF_TYPE(GetPartnerBattler(ctx->battlerAtk), ctx->moveType)))
         {
-            return ctx->abilities[ctx->battlerAtk] == ABILITY_ADAPTABILITY ? UQ_4_12(2.0) : UQ_4_12(1.5);
+            uq4_12_t stab = (GetBattlerTypeCount(ctx->battlerAtk) <= 1)
+                          ? B_STAB_DMG_SINGLE_TYPE : B_STAB_DMG_DUAL_TYPE;
+
+            if (ctx->abilities[ctx->battlerAtk] == ABILITY_ADAPTABILITY)
+                stab = uq4_12_multiply(stab, B_STAB_ADAPTABILITY_RATIO);
+            return stab;
         }
     }
 
@@ -10181,7 +10225,8 @@ bool32 EmergencyExitCanBeTriggered(enum BattlerId battler, enum Ability ability)
     if (IsBattlerAlive(battler)
      && !IsPursuitTargetSet()
      && gBattleStruct->battlerState[battler].commanderSpecies == SPECIES_NONE
-     && (HadMoreThanHalfHpNowDoesnt(battler) || gSpecialStatuses[battler].shellBellEmergencyExit)
+     && (HadMoreThanHalfHpNowDoesnt(battler) || gSpecialStatuses[battler].shellBellEmergencyExit
+         || (ability == ABILITY_EMERGENCY_EXIT && gBattleStruct->battlerState[battler].eeTransferPending))
      && (CanBattlerSwitch(battler) || !(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
      && !(gBattleTypeFlags & BATTLE_TYPE_ARENA)
      && gBattleMons[battler].volatiles.semiInvulnerable != STATE_SKY_DROP_TARGET)
@@ -10463,13 +10508,16 @@ u32 GetTotalAccuracy(struct BattleCalcValues *cv, u32 weather)
 
     gPotentialItemEffectBattler = battlerDef;
 
+    // Illuminate ignores every evasion modifier on the target, not just evasion stages.
+    bool32 ignoreDefEvasiveness = (cv->abilities[battlerAtk] == ABILITY_ILLUMINATE);
+
     accStage = gBattleMons[battlerAtk].statStages[STAT_ACC];
     evasionStage = gBattleMons[battlerDef].statStages[STAT_EVASION];
 
     if (cv->abilities[battlerAtk] == ABILITY_UNAWARE
      || cv->abilities[battlerAtk] == ABILITY_KEEN_EYE
      || cv->abilities[battlerAtk] == ABILITY_MINDS_EYE
-     || (GetConfig(B_ILLUMINATE_EFFECT) >= GEN_9 && cv->abilities[battlerAtk] == ABILITY_ILLUMINATE))
+     || ignoreDefEvasiveness)
         evasionStage = DEFAULT_STAT_STAGE;
     if (MoveIgnoresDefenseEvasionStages(cv->move))
         evasionStage = DEFAULT_STAT_STAGE;
@@ -10493,7 +10541,8 @@ u32 GetTotalAccuracy(struct BattleCalcValues *cv, u32 weather)
     if ((attackerWeather & B_WEATHER_SUN) && MoveHas50AccuracyInSun(cv->move))
         moveAcc = 50;
     // Check Wonder Skin.
-    if (cv->abilities[battlerDef] == ABILITY_WONDER_SKIN && IsBattleMoveStatus(cv->move) && moveAcc > 50)
+    if (!ignoreDefEvasiveness
+     && cv->abilities[battlerDef] == ABILITY_WONDER_SKIN && IsBattleMoveStatus(cv->move) && moveAcc > 50)
         moveAcc = 50;
 
     u32 calc = gAccuracyStageRatios[buff].dividend * moveAcc;
@@ -10512,27 +10561,33 @@ u32 GetTotalAccuracy(struct BattleCalcValues *cv, u32 weather)
         if (IsBattleMovePhysical(cv->move))
             calc = (calc * 80) / 100; // 1.2 hustle loss
         break;
+    case ABILITY_KEEN_EYE:
+        calc = (calc * 120) / 100; // 1.2 keen eye boost
+        break;
     default:
         break;
     }
 
     // Target's ability
-    switch (cv->abilities[battlerDef])
+    if (!ignoreDefEvasiveness)
     {
-    case ABILITY_SAND_VEIL:
-        if (attackerWeather & B_WEATHER_SANDSTORM)
-            calc = (calc * 80) / 100; // 1.2 sand veil loss
-        break;
-    case ABILITY_SNOW_CLOAK:
-        if (attackerWeather & B_WEATHER_ICY_ANY)
-            calc = (calc * 80) / 100; // 1.2 snow cloak loss
-        break;
-    case ABILITY_TANGLED_FEET:
-        if (gBattleMons[battlerDef].volatiles.confusionTimer)
-            calc = (calc * 50) / 100; // 1.5 tangled feet loss
-        break;
-    default:
-        break;
+        switch (cv->abilities[battlerDef])
+        {
+        case ABILITY_SAND_VEIL:
+            if (attackerWeather & B_WEATHER_SANDSTORM)
+                calc = (calc * 80) / 100; // 1.2 sand veil loss
+            break;
+        case ABILITY_SNOW_CLOAK:
+            if (attackerWeather & B_WEATHER_ICY_ANY)
+                calc = (calc * 80) / 100; // 1.2 snow cloak loss
+            break;
+        case ABILITY_TANGLED_FEET:
+            if (gBattleMons[battlerDef].volatiles.confusionTimer)
+                calc = (calc * 50) / 100; // 1.5 tangled feet loss
+            break;
+        default:
+            break;
+        }
     }
 
     // Attacker's ally's ability
@@ -10564,15 +10619,9 @@ u32 GetTotalAccuracy(struct BattleCalcValues *cv, u32 weather)
         break;
     }
 
-    // Target's hold effect
-    switch (cv->holdEffects[battlerDef])
-    {
-    case HOLD_EFFECT_EVASION_UP:
+    // Target's hold effect (Illuminate ignores Bright Powder and friends)
+    if (!ignoreDefEvasiveness && cv->holdEffects[battlerDef] == HOLD_EFFECT_EVASION_UP)
         calc = (calc * (100 - defParam)) / 100;
-        break;
-    default:
-        break;
-    }
 
     if (gBattleStruct->battlerState[battlerAtk].usedMicleBerry)
         calc = (calc * 120) / 100;  // 20% acc boost
@@ -10585,6 +10634,10 @@ u32 GetTotalAccuracy(struct BattleCalcValues *cv, u32 weather)
 
     if (weather & B_WEATHER_FOG)
         calc = (calc * 60) / 100; // modified by 3/5
+
+    // An illuminated battler is easier to hit.
+    if (cv->abilities[battlerDef] == ABILITY_ILLUMINATE)
+        calc = (calc * 90) / 100;
 
     return calc;
 }
@@ -10635,6 +10688,10 @@ bool32 DoesOHKOMoveMissTarget(struct BattleCalcValues *cv)
         u32 odds = GetMoveAccuracy(cv->move) + (gBattleMons[cv->battlerAtk].level - gBattleMons[cv->battlerDef].level);
         if (MoveDecreasesAccIfUserNotSameType(cv->move) && !IS_BATTLER_OF_TYPE(cv->battlerAtk, GetBattleMoveType(cv->move)))
             odds -= 10;
+        if (cv->abilities[cv->battlerAtk] == ABILITY_KEEN_EYE)
+            odds = (odds * 120) / 100;
+        if (cv->abilities[cv->battlerDef] == ABILITY_ILLUMINATE)
+            odds = (odds * 90) / 100;
         if (RandomPercentage(RNG_ACCURACY, odds) && gBattleMons[cv->battlerAtk].level >= gBattleMons[cv->battlerDef].level)
             lands = SURE_HIT;
     }

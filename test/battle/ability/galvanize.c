@@ -62,9 +62,9 @@ SINGLE_BATTLE_TEST("Galvanize boosts power of affected moves by 20% (Gen7+) or 3
         HP_BAR(opponent, captureDamage: &results[i].damage);
     } FINALLY {
         if (genConfig >= GEN_7)
-            EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.8), results[2].damage); // STAB + ate
+            EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.56), results[2].damage); // STAB + ate
         else
-            EXPECT_MUL_EQ(results[1].damage, Q_4_12(1.95), results[3].damage); // STAB + ate
+            EXPECT_MUL_EQ(results[1].damage, Q_4_12(1.69), results[3].damage); // STAB + ate
     }
 }
 

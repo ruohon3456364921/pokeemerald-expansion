@@ -40,6 +40,9 @@
 #define B_MULTIPLE_TARGETS_DMG      GEN_LATEST // In Gen4+, damage dealt by moves that hit multiple targets at once is reduced to 75%. Previously, it was 50%, unless the move hit the entire field, in which case there was no reduction.
 #define B_STRUGGLE_RECOIL           GEN_LATEST // In Gen4+, Struggle's recoil is 1/4 of the user's max HP. In Gen2-3, it's 1/4 of the damage dealt, and in Gen1, 1/2 of it.
 #define B_RETURN_FRUSTRATION_DMG    GEN_LATEST // In Gen3+, Return and Frustration deal at least 1 damage. In Gen2, they deal none at the friendship value that gives them 0 power.
+#define B_STAB_DMG_SINGLE_TYPE      UQ_4_12(1.6) // Same-type attack bonus multiplier when the attacker has a single type.
+#define B_STAB_DMG_DUAL_TYPE        UQ_4_12(1.3) // Same-type attack bonus multiplier when the attacker has two or more types.
+#define B_STAB_ADAPTABILITY_RATIO   UQ_4_12(4.0 / 3.0) // Adaptability turns a 1.5x STAB into a 2.0x one; that ratio is kept relative to the values above.
 
 // Type settings
 #define B_GHOSTS_ESCAPE             GEN_LATEST // In Gen6+, escape prevention fails on Ghost-types. Additionally, attempting to escape from a wild battle is always sucessful.
@@ -206,7 +209,7 @@
 #define B_REDIRECT_ABILITY_ALLIES       GEN_LATEST // In Gen4+, Lightning Rod and Storm Drain also redirect ally's moves.
 #define B_LEAF_GUARD_PREVENTS_REST      GEN_LATEST // In Gen5+, Leaf Guard prevents the use of Rest in the sun.
 #define B_TRANSISTOR_BOOST              GEN_LATEST // In Gen9+, Transistor increases the power of Electric-type moves by 1.3x instead of 1.5x.
-#define B_ILLUMINATE_EFFECT             GEN_LATEST // In Gen9+, Illuminate prevents accuracy from being lowered and ignores the target's evasion. Previously, it had no in-battle effect.
+#define B_ILLUMINATE_EFFECT             GEN_LATEST // Kept for config compatibility. Illuminate's battle effect is now implemented unconditionally in battle_util.c/battle_stat_change.c.
 #define B_WEAK_ARMOR_SPEED              GEN_LATEST // In Gen7+, when hit by a physical move, Weak Armor raises Speed by 2 stages instead of 1.
 #define B_PROTEAN_LIBERO                GEN_LATEST // In Gen9+, Protean and Libero trigger only once per Battle.
 #define B_INTREPID_SWORD                GEN_LATEST // In Gen9+, Intrepid Sword triggers only once per battle.

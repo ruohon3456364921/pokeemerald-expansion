@@ -79,7 +79,7 @@ SINGLE_BATTLE_TEST("Normalize still makes Freeze-Dry do super effective damage t
     } SCENE {
         MESSAGE("It's super effective!");
     } FINALLY {
-        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.8), results[1].damage); // STAB + Ate
+        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.92), results[1].damage); // STAB + Ate
     }
 }
 
@@ -136,7 +136,7 @@ SINGLE_BATTLE_TEST("Normalize doesn't boost power of affected moves by 20% (< Ge
     } SCENE {
         HP_BAR(opponent, captureDamage: &results[i].damage);
     } FINALLY {
-        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.5), results[1].damage); // STAB + no ate
+        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.6), results[1].damage); // STAB + no ate
     }
 }
 
@@ -155,7 +155,7 @@ SINGLE_BATTLE_TEST("Normalize boosts power of affected moves by 20% (Gen7+)", s1
     } SCENE {
         HP_BAR(opponent, captureDamage: &results[i].damage);
     } FINALLY {
-        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.8), results[1].damage); // STAB + ate
+        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.92), results[1].damage); // STAB + ate
     }
 }
 

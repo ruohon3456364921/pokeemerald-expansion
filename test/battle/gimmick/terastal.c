@@ -22,8 +22,8 @@ SINGLE_BATTLE_TEST("(TERA) Terastallizing into a different type preserves other 
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SLUDGE_BOMB, player);
         HP_BAR(opponent, captureDamage: &results[i].damage2);
     } FINALLY {
-        EXPECT_EQ(results[0].damage1, results[1].damage1);
-        EXPECT_EQ(results[0].damage2, results[1].damage2);
+        EXPECT_MUL_EQ(results[0].damage1, Q_4_12(1.5 / 1.3), results[1].damage1);
+        EXPECT_MUL_EQ(results[0].damage2, Q_4_12(1.5 / 1.3), results[1].damage2);
     }
 }
 
@@ -144,7 +144,7 @@ SINGLE_BATTLE_TEST("(TERA) Terastallization's 60 BP floor occurs after Technicia
         HP_BAR(opponent, captureDamage: &results[i].damage);
     } FINALLY {
         // The jump from 45 BP (20 * 1.5x * 1.5x) to 120 BP (60 * 2.0x) is a 2.667x boost.
-        EXPECT_MUL_EQ(results[0].damage, Q_4_12(2.667), results[1].damage);
+        EXPECT_MUL_EQ(results[0].damage, Q_4_12(3.077), results[1].damage);
     }
 }
 
@@ -419,8 +419,8 @@ SINGLE_BATTLE_TEST("(TERA) Double Shock does not remove the user's Electric type
         ANIMATION(ANIM_TYPE_MOVE, MOVE_DOUBLE_SHOCK, player);
         HP_BAR(opponent, captureDamage: &damage[3]);
     } THEN {
-        EXPECT_EQ(damage[0], damage[1]);
-        EXPECT_MUL_EQ(damage[0], Q_4_12(1.333), damage[2]);
+        EXPECT_MUL_EQ(damage[0], Q_4_12(1.5 / 1.6), damage[1]);
+        EXPECT_MUL_EQ(damage[0], Q_4_12(2.0 / 1.6), damage[2]);
         EXPECT_EQ(damage[2], damage[3]);
     }
 }
@@ -521,7 +521,7 @@ SINGLE_BATTLE_TEST("(TERA) Terastallizing into the Stellar-type provides a one-t
         HP_BAR(opponent, captureDamage: &damage[2]);
     } THEN {
         // Extrasensory goes from a 50% boost to a 100% boost for a 1.33x total multiplier
-        EXPECT_MUL_EQ(damage[0], UQ_4_12(1.33), damage[1]);
+        EXPECT_MUL_EQ(damage[0], UQ_4_12(1.25), damage[1]);
         EXPECT_EQ(damage[0], damage[2]);
     }
 }

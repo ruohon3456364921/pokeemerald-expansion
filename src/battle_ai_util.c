@@ -2380,7 +2380,7 @@ bool32 CanLowerStat(enum BattlerId battlerAtk, enum BattlerId battlerDef, struct
                 return FALSE;
             break;
         case ABILITY_ILLUMINATE:
-            if (GetConfig(B_ILLUMINATE_EFFECT) >= GEN_9 && stat == STAT_ACC)
+            if (stat == STAT_ACC)
                 return FALSE;
             break;
         case ABILITY_KEEN_EYE:
@@ -6356,6 +6356,11 @@ s32 GetSelfStatChangeScore(enum BattlerId battlerAtk, enum BattlerId battlerDef,
                 stage = -1 * stage;
 
             stage = AI_GetAdjustedStatStage(battlerAtk, move, stage);
+
+            // Illuminate cannot raise its own evasion, so don't score that boost.
+            if (gAiLogicData->abilities[battlerAtk] == ABILITY_ILLUMINATE
+             && stat == STAT_EVASION && stage > 0)
+                stage = 0;
 
             if (stage > 0)
             {

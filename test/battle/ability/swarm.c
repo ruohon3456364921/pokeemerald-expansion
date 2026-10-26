@@ -23,7 +23,7 @@ SINGLE_BATTLE_TEST("Swarm boosts Bug-type moves in a pinch", s16 damage)
         // Due to numerics related to rounding on each applied multiplier,
         // the 50% move power increase doesn't manifest as a 50% damage increase, but as a 44% damage increase in this case.
         // Values obtained from https://calc.pokemonshowdown.com (Neutral nature and 0 IVs on both sides)
-        EXPECT_EQ(results[0].damage, 50);
-        EXPECT_EQ(results[1].damage, 72);
+        EXPECT_EQ(results[0].damage, 44);
+        EXPECT_EQ(results[1].damage, 62);
     }
 }

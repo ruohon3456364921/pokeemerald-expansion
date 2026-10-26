@@ -2933,6 +2933,8 @@ static enum CancelerResult CancelerSkipFrame(struct BattleCalcValues *cv)
     return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT;
 }
 
+static bool32 WillEmergencyExitInterceptHit(struct BattleCalcValues *cv, enum BattlerId battlerDef);
+
 static enum CancelerResult CancelerHealthBarUpdate(struct BattleCalcValues *cv)
 {
     for (enum BattlerId battlerDef = 0; battlerDef < gBattlersCount; battlerDef++)
@@ -2948,6 +2950,9 @@ static enum CancelerResult CancelerHealthBarUpdate(struct BattleCalcValues *cv)
          || DoesIceFaceBlockMove(battlerDef, cv->move))
             continue;
 
+        if (WillEmergencyExitInterceptHit(cv, battlerDef))
+            continue; // HP is restored, so don't play the drop animation.
+
         s32 dmgUpdate = min(gBattleStruct->moveDamage[battlerDef], 10000);
         BtlController_EmitHealthBarUpdate(battlerDef, B_COMM_TO_CONTROLLER, dmgUpdate);
         MarkBattlerForControllerExec(battlerDef);
@@ -2956,6 +2961,21 @@ static enum CancelerResult CancelerHealthBarUpdate(struct BattleCalcValues *cv)
     }
 
     return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT; // Update health bar
+}
+
+// Emergency Exit: if this hit would drop the target from above half HP to half or
+// below, the exit is intercepted and the damage is moved to the replacement.
+static bool32 WillEmergencyExitInterceptHit(struct BattleCalcValues *cv, enum BattlerId battlerDef)
+{
+    s32 dmg = gBattleStruct->moveDamage[battlerDef];
+    u32 hp = gBattleMons[battlerDef].hp;
+    u32 maxHP = gBattleMons[battlerDef].maxHP;
+
+    if (cv->abilities[battlerDef] != ABILITY_EMERGENCY_EXIT || dmg <= 0)
+        return FALSE;
+    if (hp <= maxHP / 2 || hp - min((u32)dmg, hp) > maxHP / 2)
+        return FALSE;
+    return CanBattlerSwitch(battlerDef);
 }
 
 static bool32 TryMoveDamageUpdate(struct BattleCalcValues *cv)
@@ -2994,6 +3014,8 @@ static bool32 TryMoveDamageUpdate(struct BattleCalcValues *cv)
     }
     else
     {
+        bool32 eeIntercept = WillEmergencyExitInterceptHit(cv, cv->battlerDef);
+
         if (gBattleStruct->moveDamage[cv->battlerDef] < 0)
         {
             // Negative damage is HP gain
@@ -3028,6 +3050,13 @@ static bool32 TryMoveDamageUpdate(struct BattleCalcValues *cv)
             hpLost = hpBefore - gBattleMons[cv->battlerDef].hp;
             if (hpLost != 0)
                 gBattleStruct->innardsOutHpLost[cv->battlerDef] += hpLost;
+
+            if (eeIntercept)
+            {
+                gBattleStruct->battlerState[cv->battlerDef].eeTransferDamage += hpLost;
+                gBattleMons[cv->battlerDef].hp = hpBefore;
+                gBattleStruct->battlerState[cv->battlerDef].eeTransferPending = TRUE;
+            }
 
             gProtectStructs[cv->battlerDef].assuranceDoubled = TRUE;
             gProtectStructs[cv->battlerDef].revengeDoubled |= 1u << cv->battlerAtk;

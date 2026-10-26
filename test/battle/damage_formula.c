@@ -126,11 +126,11 @@ DOUBLE_BATTLE_TEST("A spread move will do correct damage to the second mon if th
         PLAYER(SPECIES_REGIROCK);
         PLAYER(SPECIES_REGIROCK);
         OPPONENT(SPECIES_WOBBUFFET) { HP(200); }
-        OPPONENT(SPECIES_WOBBUFFET);
+        OPPONENT(SPECIES_WOBBUFFET) { MaxHP(999); HP(999); }
     } WHEN {
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); MOVE(playerRight, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); MOVE(playerRight, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_ROCK_SLIDE, playerLeft);
         HP_BAR(opponentLeft, captureDamage: &damage[0]);
@@ -160,11 +160,11 @@ MULTI_BATTLE_TEST("A spread move will do correct damage to the second mon if the
         PLAYER(SPECIES_REGIROCK);
         PARTNER(SPECIES_REGIROCK);
         OPPONENT_A(SPECIES_WOBBUFFET) { HP(200); }
-        OPPONENT_B(SPECIES_WOBBUFFET);
+        OPPONENT_B(SPECIES_WOBBUFFET) { MaxHP(999); HP(999); }
     } WHEN {
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); MOVE(playerRight, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); MOVE(playerRight, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_ROCK_SLIDE, playerLeft);
         HP_BAR(opponentLeft, captureDamage: &damage[0]);
@@ -194,11 +194,11 @@ TWO_VS_ONE_BATTLE_TEST("A spread move will do correct damage to the second mon i
         PLAYER(SPECIES_REGIROCK);
         PARTNER(SPECIES_REGIROCK);
         OPPONENT_A(SPECIES_WOBBUFFET) { HP(200); }
-        OPPONENT_A(SPECIES_WOBBUFFET);
+        OPPONENT_A(SPECIES_WOBBUFFET) { MaxHP(999); HP(999); }
     } WHEN {
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); MOVE(playerRight, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); MOVE(playerRight, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_ROCK_SLIDE, playerLeft);
         HP_BAR(opponentLeft, captureDamage: &damage[0]);
@@ -228,11 +228,11 @@ ONE_VS_TWO_BATTLE_TEST("A spread move will do correct damage to the second mon i
         PLAYER(SPECIES_REGIROCK);
         PLAYER(SPECIES_REGIROCK);
         OPPONENT_A(SPECIES_WOBBUFFET) { HP(200); }
-        OPPONENT_B(SPECIES_WOBBUFFET);
+        OPPONENT_B(SPECIES_WOBBUFFET) { MaxHP(999); HP(999); }
     } WHEN {
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); MOVE(playerRight, MOVE_ROCK_SLIDE); }
-        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); MOVE(playerRight, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
+        TURN { MOVE(playerLeft, MOVE_ROCK_SLIDE, WITH_RNG(RNG_DAMAGE_MODIFIER, 0)); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_ROCK_SLIDE, playerLeft);
         HP_BAR(opponentLeft, captureDamage: &damage[0]);
@@ -259,22 +259,22 @@ SINGLE_BATTLE_TEST("Punching Glove vs Muscle Band Damage calculation")
 {
     s16 dmgPlayer, dmgOpponent;
     s16 expectedDamagePlayer, expectedDamageOpponent;
-    PARAMETRIZE { expectedDamagePlayer = 204, expectedDamageOpponent = 201; }
-    PARAMETRIZE { expectedDamagePlayer = 201, expectedDamageOpponent = 198; }
-    PARAMETRIZE { expectedDamagePlayer = 199, expectedDamageOpponent = 196; }
-    PARAMETRIZE { expectedDamagePlayer = 196, expectedDamageOpponent = 193; }
+    PARAMETRIZE { expectedDamagePlayer = 218, expectedDamageOpponent = 214; }
+    PARAMETRIZE { expectedDamagePlayer = 214, expectedDamageOpponent = 211; }
+    PARAMETRIZE { expectedDamagePlayer = 213, expectedDamageOpponent = 210; }
+    PARAMETRIZE { expectedDamagePlayer = 210, expectedDamageOpponent = 206; }
+    PARAMETRIZE { expectedDamagePlayer = 208, expectedDamageOpponent = 205; }
+    PARAMETRIZE { expectedDamagePlayer = 206, expectedDamageOpponent = 203; }
+    PARAMETRIZE { expectedDamagePlayer = 203, expectedDamageOpponent = 200; }
+    PARAMETRIZE { expectedDamagePlayer = 202, expectedDamageOpponent = 198; }
+    PARAMETRIZE { expectedDamagePlayer = 200, expectedDamageOpponent = 197; }
+    PARAMETRIZE { expectedDamagePlayer = 197, expectedDamageOpponent = 194; }
     PARAMETRIZE { expectedDamagePlayer = 195, expectedDamageOpponent = 192; }
-    PARAMETRIZE { expectedDamagePlayer = 193, expectedDamageOpponent = 190; }
+    PARAMETRIZE { expectedDamagePlayer = 194, expectedDamageOpponent = 190; }
     PARAMETRIZE { expectedDamagePlayer = 190, expectedDamageOpponent = 187; }
     PARAMETRIZE { expectedDamagePlayer = 189, expectedDamageOpponent = 186; }
-    PARAMETRIZE { expectedDamagePlayer = 187, expectedDamageOpponent = 184; }
+    PARAMETRIZE { expectedDamagePlayer = 186, expectedDamageOpponent = 184; }
     PARAMETRIZE { expectedDamagePlayer = 184, expectedDamageOpponent = 181; }
-    PARAMETRIZE { expectedDamagePlayer = 183, expectedDamageOpponent = 180; }
-    PARAMETRIZE { expectedDamagePlayer = 181, expectedDamageOpponent = 178; }
-    PARAMETRIZE { expectedDamagePlayer = 178, expectedDamageOpponent = 175; }
-    PARAMETRIZE { expectedDamagePlayer = 177, expectedDamageOpponent = 174; }
-    PARAMETRIZE { expectedDamagePlayer = 174, expectedDamageOpponent = 172; }
-    PARAMETRIZE { expectedDamagePlayer = 172, expectedDamageOpponent = 169; }
     GIVEN {
         PLAYER(SPECIES_MAKUHITA) { Item(ITEM_PUNCHING_GLOVE); }
         OPPONENT(SPECIES_MAKUHITA) { Item(ITEM_MUSCLE_BAND); }
@@ -301,22 +301,22 @@ SINGLE_BATTLE_TEST("Gem boosted Damage calculation")
     s16 dmg;
     s16 expectedDamage;
 #if I_GEM_BOOST_POWER >= GEN_6
+    PARAMETRIZE { expectedDamage = 256; }
+    PARAMETRIZE { expectedDamage = 253; }
+    PARAMETRIZE { expectedDamage = 250; }
+    PARAMETRIZE { expectedDamage = 248; }
+    PARAMETRIZE { expectedDamage = 245; }
+    PARAMETRIZE { expectedDamage = 243; }
     PARAMETRIZE { expectedDamage = 240; }
     PARAMETRIZE { expectedDamage = 237; }
-    PARAMETRIZE { expectedDamage = 234; }
+    PARAMETRIZE { expectedDamage = 235; }
     PARAMETRIZE { expectedDamage = 232; }
-    PARAMETRIZE { expectedDamage = 229; }
-    PARAMETRIZE { expectedDamage = 228; }
-    PARAMETRIZE { expectedDamage = 225; }
+    PARAMETRIZE { expectedDamage = 230; }
+    PARAMETRIZE { expectedDamage = 227; }
+    PARAMETRIZE { expectedDamage = 224; }
     PARAMETRIZE { expectedDamage = 222; }
-    PARAMETRIZE { expectedDamage = 220; }
-    PARAMETRIZE { expectedDamage = 217; }
-    PARAMETRIZE { expectedDamage = 216; }
-    PARAMETRIZE { expectedDamage = 213; }
-    PARAMETRIZE { expectedDamage = 210; }
-    PARAMETRIZE { expectedDamage = 208; }
-    PARAMETRIZE { expectedDamage = 205; }
-    PARAMETRIZE { expectedDamage = 204; }
+    PARAMETRIZE { expectedDamage = 219; }
+    PARAMETRIZE { expectedDamage = 218; }
 #else
     PARAMETRIZE { expectedDamage = 273; }
     PARAMETRIZE { expectedDamage = 270; }
@@ -354,12 +354,12 @@ SINGLE_BATTLE_TEST("Gem boosted Damage calculation")
 
 #define NUM_DAMAGE_SPREADS (DMG_ROLL_PERCENT_HI - DMG_ROLL_PERCENT_LO) + 1
 
-static const s16 sThunderShockTransistorSpreadGen9[] = { 54, 55, 56, 57, 57, 58, 59, 60, 60, 60, 61, 62, 63, 63, 64, 65 };
-static const s16 sThunderShockTransistorSpreadGen8[] = { 63, 64, 65, 66, 66, 67, 68, 69, 69, 70, 71, 72, 72, 73, 74, 75 };
-static const s16 sThunderShockRegularSpread[] = { 42, 42, 43, 43, 44, 45, 45, 45, 46, 46, 47, 48, 48, 48, 49, 50 };
-static const s16 sWildChargeTransistorSpreadGen9[] = { 123, 124, 126, 127, 129, 130, 132, 133, 135, 136, 138, 139, 141, 142, 144, 145 };
-static const s16 sWildChargeTransistorSpreadGen8[] = { 141, 143, 145, 147, 148, 150, 151, 153, 155, 156, 158, 160, 162, 163, 165, 167 };
-static const s16 sWildChargeRegularSpread[] = { 94, 96, 96, 98, 99, 100, 101, 102, 103, 105, 105, 107, 108, 109, 110, 111 };
+static const s16 sThunderShockTransistorSpreadGen9[] = { 58, 59, 60, 61, 61, 62, 63, 64, 64, 65, 65, 66, 67, 68, 69, 69 };
+static const s16 sThunderShockTransistorSpreadGen8[] = { 68, 69, 69, 70, 71, 72, 73, 73, 74, 75, 76, 77, 77, 78, 79, 80 };
+static const s16 sThunderShockRegularSpread[] = { 45, 45, 46, 46, 47, 48, 48, 49, 49, 49, 50, 51, 51, 52, 53, 53 };
+static const s16 sWildChargeTransistorSpreadGen9[] = { 131, 133, 134, 136, 137, 139, 141, 142, 144, 145, 147, 149, 150, 152, 153, 155 };
+static const s16 sWildChargeTransistorSpreadGen8[] = { 151, 153, 155, 157, 158, 160, 161, 164, 165, 167, 169, 171, 173, 174, 176, 178 };
+static const s16 sWildChargeRegularSpread[] = { 101, 102, 103, 105, 105, 107, 108, 109, 110, 112, 113, 114, 115, 117, 117, 119 };
 
 DOUBLE_BATTLE_TEST("Transistor Damage calculation", s16 damage)
 {
@@ -422,22 +422,22 @@ SINGLE_BATTLE_TEST("Damage calculation for Protosynthesis")
 {
     s16 dmg;
     s16 expectedDamage;
-    PARAMETRIZE { expectedDamage = 105; }
-    PARAMETRIZE { expectedDamage = 103; }
-    PARAMETRIZE { expectedDamage = 102; }
-    PARAMETRIZE { expectedDamage = 100; }
-    PARAMETRIZE { expectedDamage = 100; }
-    PARAMETRIZE { expectedDamage = 99; }
-    PARAMETRIZE { expectedDamage = 97; }
-    PARAMETRIZE { expectedDamage = 97; }
-    PARAMETRIZE { expectedDamage = 96; }
-    PARAMETRIZE { expectedDamage = 94; }
-    PARAMETRIZE { expectedDamage = 94; }
-    PARAMETRIZE { expectedDamage = 93; }
     PARAMETRIZE { expectedDamage = 91; }
     PARAMETRIZE { expectedDamage = 90; }
-    PARAMETRIZE { expectedDamage = 90; }
     PARAMETRIZE { expectedDamage = 88; }
+    PARAMETRIZE { expectedDamage = 87; }
+    PARAMETRIZE { expectedDamage = 87; }
+    PARAMETRIZE { expectedDamage = 86; }
+    PARAMETRIZE { expectedDamage = 85; }
+    PARAMETRIZE { expectedDamage = 85; }
+    PARAMETRIZE { expectedDamage = 83; }
+    PARAMETRIZE { expectedDamage = 82; }
+    PARAMETRIZE { expectedDamage = 82; }
+    PARAMETRIZE { expectedDamage = 81; }
+    PARAMETRIZE { expectedDamage = 79; }
+    PARAMETRIZE { expectedDamage = 78; }
+    PARAMETRIZE { expectedDamage = 78; }
+    PARAMETRIZE { expectedDamage = 77; }
     GIVEN {
         ASSUME(GetMoveCategory(MOVE_CLOSE_COMBAT) == DAMAGE_CATEGORY_PHYSICAL);
         PLAYER(SPECIES_URSHIFU_RAPID_STRIKE) { Level(95); Attack(281); }

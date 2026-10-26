@@ -319,7 +319,7 @@ DOUBLE_BATTLE_TEST("Pledge moves get same attack type bonus from partner", s16 d
         ANIMATION(ANIM_TYPE_MOVE, MOVE_FIRE_PLEDGE, playerRight);
         HP_BAR(opponentRight, captureDamage: &results[i].damage);
     } FINALLY {
-        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.5), results[1].damage);
+        EXPECT_MUL_EQ(results[0].damage, Q_4_12(1.6), results[1].damage);
     }
 }
 
@@ -327,22 +327,22 @@ DOUBLE_BATTLE_TEST("Damage calculation: Combined pledge move")
 {
     s16 dmg;
     s16 expectedDamage;
-    PARAMETRIZE { expectedDamage = 159; }
-    PARAMETRIZE { expectedDamage = 156; }
+    PARAMETRIZE { expectedDamage = 170; }
+    PARAMETRIZE { expectedDamage = 166; }
+    PARAMETRIZE { expectedDamage = 165; }
+    PARAMETRIZE { expectedDamage = 163; }
+    PARAMETRIZE { expectedDamage = 162; }
+    PARAMETRIZE { expectedDamage = 160; }
+    PARAMETRIZE { expectedDamage = 158; }
+    PARAMETRIZE { expectedDamage = 157; }
+    PARAMETRIZE { expectedDamage = 155; }
     PARAMETRIZE { expectedDamage = 154; }
-    PARAMETRIZE { expectedDamage = 153; }
-    PARAMETRIZE { expectedDamage = 151; }
+    PARAMETRIZE { expectedDamage = 152; }
     PARAMETRIZE { expectedDamage = 150; }
-    PARAMETRIZE { expectedDamage = 148; }
+    PARAMETRIZE { expectedDamage = 149; }
     PARAMETRIZE { expectedDamage = 147; }
-    PARAMETRIZE { expectedDamage = 145; }
+    PARAMETRIZE { expectedDamage = 146; }
     PARAMETRIZE { expectedDamage = 144; }
-    PARAMETRIZE { expectedDamage = 142; }
-    PARAMETRIZE { expectedDamage = 141; }
-    PARAMETRIZE { expectedDamage = 139; }
-    PARAMETRIZE { expectedDamage = 138; }
-    PARAMETRIZE { expectedDamage = 136; }
-    PARAMETRIZE { expectedDamage = 135; }
     GIVEN {
         ASSUME(GetMoveCategory(MOVE_GRASS_PLEDGE) == DAMAGE_CATEGORY_SPECIAL);
         PLAYER(SPECIES_WOBBUFFET) { Speed(4); }

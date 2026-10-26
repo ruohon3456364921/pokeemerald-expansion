@@ -537,11 +537,13 @@ struct BattlerState
     u32 lastMoveTarget:3; // The last target on which each mon used a move, for the sake of Instruct
     // End of Word
     u16 hpOnSwitchout;
+    u16 eeTransferDamage; // Emergency Exit: damage moved to the replacement
+    u16 eeTransferPending:1;
     u16 switchIn:1;
     u16 notOnField:1;
     u16 originalBattlerPartyId:4;
     u16 isFirstTurn:2; // Starts at 2 on switch in and counts down during end turn
-    u16 padding:8;
+    u16 padding:7;
     // End of Word
 };
 

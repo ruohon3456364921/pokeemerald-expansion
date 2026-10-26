@@ -2899,6 +2899,8 @@ static void ClearSetDataOnLeave(enum BattlerId battler)
     gProtectStructs[battler].pranksterElevated = FALSE;
     gSpecialStatuses[battler].queuedSwitch = NO_QUEUED_SWITCH;
     gSpecialStatuses[battler].shellBellEmergencyExit = FALSE;
+    gBattleStruct->battlerState[battler].eeTransferPending = FALSE;
+    gBattleStruct->battlerState[battler].eeTransferDamage = 0;
     gBattleStruct->battlerState[battler].isFirstTurn = 2;
     gBattleStruct->battlerState[battler].stompingTantrumTimer = 0;
     gBattleStruct->battlerState[battler].canPickupItem = FALSE;
@@ -4453,6 +4455,22 @@ s32 GetChosenMovePriority(enum BattlerId battler, enum Ability ability)
     return GetBattleMovePriority(battler, ability, move);
 }
 
+static bool32 IsSwitchOutMove(enum Move move)
+{
+    switch (GetMoveEffect(move))
+    {
+    case EFFECT_HIT_ESCAPE:         // U-turn, Volt Switch, Flip Turn
+    case EFFECT_TELEPORT:
+    case EFFECT_BATON_PASS:
+    case EFFECT_PARTING_SHOT:
+    case EFFECT_SHED_TAIL:
+    case EFFECT_WEATHER_AND_SWITCH: // Chilly Reception
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 s32 GetBattleMovePriority(enum BattlerId battler, enum Ability ability, enum Move move)
 {
     s32 priority = 0;
@@ -4488,6 +4506,10 @@ s32 GetBattleMovePriority(enum BattlerId battler, enum Ability ability, enum Mov
         priority++;
     }
     else if (ability == ABILITY_TRIAGE && IsHealingMove(move))
+    {
+        priority += 3;
+    }
+    else if (ability == ABILITY_EMERGENCY_EXIT && IsSwitchOutMove(move))
     {
         priority += 3;
     }
