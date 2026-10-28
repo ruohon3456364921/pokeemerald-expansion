@@ -1,0 +1,11 @@
+{
+  "Theme": "Light",
+  "Culture": "zh-CN",
+  "DefaultProjectDirectory": "",
+  "Shortcuts": {
+    "OpenProject": "Ctrl+O",
+    "Save": "Ctrl+S",
+    "Refresh": "Ctrl+R",
+    "Settings": "Ctrl+,"
+  }
+}

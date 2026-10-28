@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UED Studio · 宝可梦编辑器</title>
+<link rel="stylesheet" href="style.css?v=10">
+</head>
+<body>
+<header>
+  <div class="brand">UED<span>Studio</span></div>
+  <div class="project" id="projectPath" title="项目路径"></div>
+  <div class="spacer"></div>
+  <button class="ghost" id="btnCheck">体检</button>
+  <button class="ghost" id="btnUndo">撤销上次保存</button>
+  <button class="ghost" id="btnReload">重新加载</button>
+  <span class="ver">v2.5</span>
+</header>
+
+<main>
+  <aside>
+    <div class="modes">
+      <button data-mode="species" class="active">宝可梦</button>
+      <button data-mode="item">道具</button>
+    </div>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="搜索名称 / 符号 / 编号" autocomplete="off">
+      <span class="count" id="listCount"></span>
+    </div>
+    <div id="list" class="list"></div>
+  </aside>
+  <section id="editor">
+    <div class="empty" id="empty">从左侧选择一只宝可梦开始编辑</div>
+    <div id="editorBody" class="editor-body hidden">
+      <div class="species-head">
+        <div class="sprite-box">
+          <img id="sprite" class="sprite" alt="宝可梦形象">
+          <div class="sprite-tabs">
+            <button data-spr="front" class="active">正面</button>
+            <button data-spr="back">背面</button>
+            <button data-spr="icon">图标</button>
+          </div>
+        </div>
+        <div class="head-text">
+          <h1 id="speciesName">—</h1>
+          <div class="sub" id="speciesSub"></div>
+        </div>
+        <div class="badge" id="speciesFile"></div>
+      </div>
+      <div id="formTabs" class="forms hidden"></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="fields">属性数值</button>
+        <button class="tab" data-tab="moves">招式</button>
+      </div>
+      <div id="panelFields" class="tab-panel">
+        <div id="groups" class="groups"></div>
+      </div>
+      <div id="panelMoves" class="tab-panel hidden">
+        <div id="learnsetTabs" class="subtabs"></div>
+        <div id="learnsetBody" class="learnset-body"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="savebar" class="savebar hidden">
+  <span id="saveInfo">0 项改动</span>
+  <div class="spacer"></div>
+  <button id="btnReset" class="ghost">放弃改动</button>
+  <button id="btnSave" class="primary">保存</button>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal hidden">
+  <div class="modal-body">
+    <h2 id="modalTitle">结果</h2>
+    <pre id="modalText"></pre>
+    <div class="modal-actions"><button id="modalClose" class="primary">关闭</button></div>
+  </div>
+</div>
+
+<script src="app.js?v=14"></script>
+</body>
+</html>

@@ -70,3 +70,9 @@ __pycache__
 
 # editor local history
 .history/
+
+# UED 工具的快照历史与备份，不进版本库
+.ued-studio/
+*.ued.bak
+# 二进制依赖（DLL 体积大，不入库）
+*.dll
