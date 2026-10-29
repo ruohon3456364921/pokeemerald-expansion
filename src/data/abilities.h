@@ -583,8 +583,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_TANGLED_FEET] =
     {
         .name = _("蹒跚"),
-        .description = COMPOUND_STRING("在混乱状态时闪避率会提高"),
-        .aiRating = 2,
+        .description = COMPOUND_STRING("混乱时不打自己且闪避提高"),
+        .aiRating = 5,
         .breakable = TRUE,
     },
 

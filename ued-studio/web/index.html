@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UED Studio · 宝可梦编辑器</title>
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <header>
@@ -14,7 +14,7 @@
   <button class="ghost" id="btnCheck">体检</button>
   <button class="ghost" id="btnUndo">撤销上次保存</button>
   <button class="ghost" id="btnReload">重新加载</button>
-  <span class="ver">v2.5</span>
+  <span class="ver">v2.6</span>
 </header>
 
 <main>
@@ -22,7 +22,9 @@
     <div class="modes">
       <button data-mode="species" class="active">宝可梦</button>
       <button data-mode="item">道具</button>
+      <button data-mode="frontier">开拓区</button>
     </div>
+    <div id="frTabs" class="subtabs hidden"></div>
     <div class="search-wrap">
       <input id="search" type="search" placeholder="搜索名称 / 符号 / 编号" autocomplete="off">
       <span class="count" id="listCount"></span>
@@ -79,6 +81,6 @@
   </div>
 </div>
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>

@@ -4,7 +4,8 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
         .species = SPECIES_SUNKERN,
         .moves = {MOVE_MEGA_DRAIN, MOVE_HELPING_HAND, MOVE_SUNNY_DAY, MOVE_LIGHT_SCREEN},
         .heldItem = ITEM_LAX_INCENSE,
-        .ev = TRAINER_PARTY_EVS(252, 0, 0, 0, 252, 0),
+        .ability = ABILITY_CHLOROPHYLL,
+        .ev = TRAINER_PARTY_EVS(252, 0, 0, 6, 252, 0),
         .nature = NATURE_RELAXED,
         .ball = BALL_POKE
     },
@@ -1251,9 +1252,10 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
     [FRONTIER_MON_ONIX] = {
         .species = SPECIES_ONIX,
         .moves = {MOVE_ROCK_SLIDE, MOVE_BIND, MOVE_DRAGON_BREATH, MOVE_SANDSTORM},
-        .heldItem = ITEM_SITRUS_BERRY,
+        .heldItem = ITEM_CUSTAP_BERRY,
+        .ability = ABILITY_STURDY,
         .ev = TRAINER_PARTY_EVS(170, 0, 170, 0, 0, 170),
-        .nature = NATURE_HARDY,
+        .nature = NATURE_ADAMANT,
         .ball = BALL_POKE
     },
     [FRONTIER_MON_BEAUTIFLY] = {
@@ -7055,5 +7057,13 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
         .ev = TRAINER_PARTY_EVS(170, 0, 170, 0, 0, 170),
         .nature = NATURE_MODEST,
         .ball = BALL_POKE
-    }
+    },
+    [FRONTIER_MON_GOLISOPOD] = {
+        .species = SPECIES_GOLISOPOD,
+        .moves = {MOVE_FLIP_TURN, MOVE_FIRST_IMPRESSION, MOVE_U_TURN, MOVE_NONE},
+        .heldItem = ITEM_HEAVY_DUTY_BOOTS,
+        .ev = TRAINER_PARTY_EVS(252, 252, 6, 0, 0, 0),
+        .nature = NATURE_ADAMANT,
+        .ball = BALL_POKE
+    },
 };

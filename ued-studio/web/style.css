@@ -195,3 +195,48 @@ aside{
 .field .ro{background:#f6f7f9;border:1px dashed #d8dde3;border-radius:6px;padding:8px 10px;
   color:#6b7280;font-size:12.5px;line-height:1.6;white-space:pre-wrap}
 .field .hint{display:block;margin-top:4px;color:#9aa3ad;font-size:11.5px}
+
+/* ------------------------------------------------------ 开拓区 */
+#frTabs { padding: 8px 14px 2px; }
+.fr-note { font-size: 12.5px; color: #6b7280; line-height: 1.7;
+  background: #f6f8fa; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 10px 12px; margin: 0 0 14px; }
+.fr-note code { font-family: ui-monospace, monospace; }
+.fr-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.fr-row select { flex: 1 1 auto; min-width: 0; }
+.fr-idx { width: 26px; text-align: right; color: #9aa3ad; font-size: 12.5px; }
+.fr-lock { flex: 1 1 auto; font-family: ui-monospace, monospace;
+  font-size: 12.5px; color: #6b7280; background: #f3f4f6;
+  border: 1px dashed #d1d5db; border-radius: 6px; padding: 7px 9px; }
+.fr-del { color: #c0392b; border: 1px solid #f0c8c2; background: #fff;
+  border-radius: 6px; padding: 5px 10px; font-size: 12.5px; cursor: pointer; }
+.fr-del:hover { background: #fff5f3; }
+.fr-add { border: 1px dashed #c7d2fe; background: #f5f7ff; color: #3b5bdb;
+  border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.fr-add:hover { background: #eef2ff; }
+.fr-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.evgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.evgrid label { display: flex; flex-direction: column; gap: 4px;
+  font-size: 12.5px; color: #6b7280; }
+.evgrid input { width: 100%; }
+.ev-total { font-size: 12.5px; color: #6b7280; margin-top: 8px; }
+.ev-total.bad { color: #c0392b; }
+
+/* 可搜索下拉 */
+.cb{position:relative;display:flex;flex:1 1 0;min-width:0;align-items:center}
+.cb select.cb-native{display:none}
+.cb-in{flex:1;min-width:0;height:36px;padding:0 10px;border:1px solid #dcdfe6;border-radius:6px;
+  background:#fff;font:inherit;color:#1f2329}
+.cb-in:focus{outline:none;border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+.cb-panel{position:fixed;max-height:320px;overflow:auto;
+  background:#fff;border:1px solid #dcdfe6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);
+  z-index:80;padding:4px}
+.cb-item{padding:6px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;font-size:13px}
+.cb-item:hover{background:#f2f5fa}
+.cb-item.sel{background:#eaf1ff;color:#2f6fed}
+.cb-empty{padding:8px;color:#8a94a6;font-size:13px}
+.fr-row .cb{flex:1 1 0}
+
+/* 浮层统一挂在 body 上，fixed 定位由 JS 计算 */
+.cb-panel.portal,.combo-list.combo-portal{position:fixed;right:auto}

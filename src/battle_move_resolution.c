@@ -407,6 +407,10 @@ static enum CancelerResult CancelerConfused(struct BattleCalcValues *cv)
 
         if (vol->confusionTimer)
         {
+            // Tangled Feet ignores the self-hit, but confusion and its evasion boost remain.
+            if (cv->abilities[cv->battlerAtk] == ABILITY_TANGLED_FEET)
+                return CANCELER_RESULT_SUCCESS;
+
              // confusion dmg
             if (RandomPercentage(RNG_CONFUSION, (GetConfig(B_CONFUSION_SELF_DMG_CHANCE) >= GEN_7 ? 33 : 50)))
             {

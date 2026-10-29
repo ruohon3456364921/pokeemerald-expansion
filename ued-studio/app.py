@@ -13,10 +13,13 @@
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
 import mimetypes
 import os
+import shutil
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -32,8 +35,8 @@ from ued_core import NativeLib, Session, NativeError
 HERE = os.path.dirname(os.path.abspath(__file__))
 DLL_PATH = os.path.join(HERE, "lib", "UniversalEditor.Native.dll")
 WEB_DIR = os.path.join(HERE, "web")
-HISTORY_LIMIT = 30
-APP_VERSION = "2.5"
+HISTORY_LIMIT = 8  # 每份快照约 11MB，8 份≈90MB
+APP_VERSION = "2.7"
 
 with open(os.path.join(HERE, "field_groups.json"), encoding="utf-8") as _fh:
     FIELD_GROUPS = json.load(_fh)
@@ -123,6 +126,57 @@ def _validate_value(key: str, old: str, new: str) -> None:
         raise NativeError("字段 %s 原本是整数，新值 %r 不是整数" % (key, new_s))
 
 
+def history_root(project: str) -> str:
+    """快照/撤销记录放在仓库之外，避免污染版本库。"""
+    base = os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()
+    name = os.path.basename(project.rstrip("\\/")) or "project"
+    digest = hashlib.sha1(project.lower().encode("utf-8")).hexdigest()[:8]
+    return os.path.join(base, "UEDStudio", "history", "%s-%s" % (name, digest))
+
+
+def migrate_legacy_history(project: str, new_dir: str) -> None:
+    """把旧版本写在工程里的 .ued-studio/history 和 *.ued.bak 搬出去。"""
+    legacy = os.path.join(project, ".ued-studio")
+    legacy_hist = os.path.join(legacy, "history")
+    if os.path.isdir(legacy_hist):
+        os.makedirs(new_dir, exist_ok=True)
+        for name in sorted(os.listdir(legacy_hist)):
+            src = os.path.join(legacy_hist, name)
+            dst = os.path.join(new_dir, name)
+            if os.path.exists(dst):
+                continue
+            try:
+                shutil.move(src, dst)
+            except OSError:
+                pass
+        shutil.rmtree(legacy_hist, ignore_errors=True)
+    if os.path.isdir(legacy):
+        try:
+            os.rmdir(legacy)
+        except OSError:
+            pass
+    legacy_baks = os.path.join(os.path.dirname(new_dir), "legacy-baks",
+                               os.path.basename(new_dir))
+    for root, _dirs, files in os.walk(project):
+        if ".git" in root.split(os.sep) or not root.startswith(project):
+            continue
+        for name in files:
+            if not name.endswith(".ued.bak"):
+                continue
+            src = os.path.join(root, name)
+            os.makedirs(legacy_baks, exist_ok=True)
+            rel = os.path.relpath(src, project).replace(os.sep, "_")
+            dst = os.path.join(legacy_baks, rel)
+            n = 1
+            while os.path.exists(dst):
+                n += 1
+                dst = os.path.join(legacy_baks, "%s.%d" % (rel, n))
+            try:
+                shutil.move(src, dst)
+            except OSError:
+                pass
+
+
 class AppState:
     def __init__(self, project: str):
         self.project = os.path.abspath(project)
@@ -131,7 +185,8 @@ class AppState:
         self._refs = None
         self._raw_catalog = None
         self._forms = None
-        self.history_dir = os.path.join(self.project, ".ued-studio", "history")
+        self.history_dir = history_root(self.project)
+        migrate_legacy_history(self.project, self.history_dir)
 
     # -- 会话 ---------------------------------------------------------
     def session(self) -> Session:
@@ -364,9 +419,10 @@ class AppState:
                 if restored:
                     raise NativeError("%s（已回滚 %d 个文件）" % (exc, restored))
                 raise NativeError(str(exc))
+            baks = self._sweep_baks(snap)
             backup = snap.persist(self.history_dir)
             self._prune_history()
-            return {"ok": True, "kind": kind, "file": changed,
+            return {"ok": True, "kind": kind, "file": changed, "cleanedBaks": baks,
                     "count": len(moves), "warnings": warnings,
                     "backup": os.path.basename(backup)}
 
@@ -424,9 +480,10 @@ class AppState:
                 raise NativeError(str(exc))
 
             changed = [os.path.relpath(p, self.project) for p in snap.changed_files()]
+            baks = self._sweep_baks(snap)
             backup = snap.persist(self.history_dir)
             self._prune_history()
-            return {"ok": True, "symbol": symbol, "fields": clean,
+            return {"ok": True, "symbol": symbol, "fields": clean, "cleanedBaks": baks,
                     "changedFiles": changed,
                     "backup": os.path.basename(backup),
                     "warnings": warnings}
@@ -460,11 +517,23 @@ class AppState:
         return ("原生库保存时顺带改写了 all_learnables.json，已还原"
                 "（该文件不属于本次修改范围）")
 
+
+    def _sweep_baks(self, snap) -> int:
+        """原生库保存时会写 *.ued.bak，历史目录里已有等价快照，直接清掉。"""
+        removed = 0
+        for path in list(snap.blobs):
+            bak = path + ".ued.bak"
+            if bak in snap.blobs or not os.path.isfile(bak):
+                continue
+            try:
+                os.remove(bak)
+                removed += 1
+            except OSError:
+                pass
+        return removed
+
     def _prune_history(self):
-        try:
-            entries = sorted(os.listdir(self.history_dir))
-        except OSError:
-            return
+        entries = self._history_entries()
         for name in entries[:-HISTORY_LIMIT]:
             path = os.path.join(self.history_dir, name)
             if os.path.isdir(path):
@@ -479,7 +548,7 @@ class AppState:
         with STATE_LOCK:
             if not os.path.isdir(self.history_dir):
                 raise NativeError("没有可撤销的保存记录")
-            entries = sorted(os.listdir(self.history_dir))
+            entries = self._history_entries()
             if not entries:
                 raise NativeError("没有可撤销的保存记录")
             latest = os.path.join(self.history_dir, entries[-1])
@@ -597,12 +666,363 @@ class AppState:
 
             self._items_key = None
             changed = [os.path.relpath(p, self.project) for p in snap.changed_files()]
+            baks = self._sweep_baks(snap)
             backup = snap.persist(self.history_dir)
             self._prune_history()
-            return {"ok": True, "symbol": symbol, "fields": clean,
+            return {"ok": True, "symbol": symbol, "fields": clean, "cleanedBaks": baks,
                     "changedFiles": changed,
                     "backup": os.path.basename(backup),
                     "warnings": warnings}
+
+    # -- 对战开拓区 ----------------------------------------------------
+    def _frontier_path(self, rel: str) -> str:
+        return os.path.join(self.project, rel)
+
+    def _frontier_cached(self, rel: str):
+        import frontier as FRLIB
+        path = self._frontier_path(rel)
+        stat = os.stat(path)
+        key = (stat.st_mtime_ns, stat.st_size)
+        cache = getattr(self, "_frontier_cache", None) or {}
+        hit = cache.get(rel)
+        if hit and hit[0] == key:
+            return hit[1], hit[2]
+        with open(path, "rb") as fh:
+            text = fh.read().decode("utf-8")
+        if rel == FRLIB.MONS_FILE:
+            parsed = FRLIB.read_mons(text)
+        elif rel == FRLIB.TRAINERS_FILE:
+            parsed = FRLIB.read_trainers(text)
+        else:
+            parsed = FRLIB.read_pools(text)
+        cache[rel] = (key, text, parsed)
+        self._frontier_cache = cache
+        return text, parsed
+
+    NATURE_CN = {
+        "HARDY": "勤奋", "LONELY": "怕寂寞", "BRAVE": "勇敢", "ADAMANT": "固执",
+        "NAUGHTY": "顽皮", "BOLD": "大胆", "DOCILE": "坦率", "RELAXED": "悠闲",
+        "IMPISH": "淘气", "LAX": "乐天", "TIMID": "胆小", "HASTY": "急躁",
+        "SERIOUS": "认真", "JOLLY": "爽朗", "NAIVE": "天真", "MODEST": "内敛",
+        "MILD": "慢吞吞", "QUIET": "冷静", "BASHFUL": "害羞", "RASH": "马虎",
+        "CALM": "温和", "GENTLE": "温顺", "SASSY": "自大", "CAREFUL": "慎重",
+        "QUIRKY": "浮躁",
+    }
+    BALL_CN = {
+        "POKE": "精灵球", "GREAT": "超级球", "ULTRA": "高级球", "MASTER": "大师球",
+        "PREMIER": "纪念球", "REPEAT": "重复球", "TIMER": "计时球", "NEST": "巢穴球",
+        "NET": "捕网球", "DIVE": "潜水球", "LUXURY": "豪华球", "HEAL": "治愈球",
+        "DUSK": "黑暗球", "QUICK": "先机球", "CHERISH": "珍贵球", "FAST": "速度球",
+        "LEVEL": "等级球", "LURE": "诱饵球", "MOON": "月亮球", "FRIEND": "友友球",
+        "LOVE": "甜蜜球", "HEAVY": "沉重球", "SAFARI": "狩猎球", "SPORT": "竞赛球",
+        "DREAM": "梦境球", "BEAST": "究极球",
+    }
+
+    def _enum_values(self, rel: str, prefix: str) -> list:
+        path = os.path.join(self.project, rel)
+        try:
+            with open(path, "rb") as fh:
+                text = fh.read().decode("utf-8", "replace")
+        except OSError:
+            return []
+        seen, out = set(), []
+        for sym in re.findall(r'\b(%s_[A-Z0-9_]+)\b' % prefix, text):
+            if sym in seen:
+                continue
+            seen.add(sym)
+            out.append(sym)
+        return out
+
+    def frontier_enums(self) -> dict:
+        natures = []
+        for sym in self._enum_values("include/constants/pokemon.h", "NATURE"):
+            key = sym[len("NATURE_"):]
+            if key in self.NATURE_CN and key not in ("RANDOM", "MAY_SYNCHRONIZE"):
+                natures.append({"v": sym, "label": self.NATURE_CN[key]})
+        balls = []
+        for sym in self._enum_values("include/constants/pokeball.h", "BALL"):
+            key = sym[len("BALL_"):]
+            if key in self.BALL_CN:
+                balls.append({"v": sym, "label": self.BALL_CN[key]})
+        return {"natures": natures, "balls": balls}
+
+    def frontier_state(self) -> dict:
+        import frontier as FRLIB
+        _, mons = self._frontier_cached(FRLIB.MONS_FILE)
+        _, trainers = self._frontier_cached(FRLIB.TRAINERS_FILE)
+        pools_text, pools = self._frontier_cached(FRLIB.POOLS_FILE)
+        pool_map = {p["name"]: p["members"] for p in pools}
+        func_pools = FRLIB.read_func_pools(pools_text)
+        mon_list = []
+        for b in mons:
+            view = FRLIB.mon_view(b)
+            mon_list.append({"symbol": view["symbol"], "species": view["species"],
+                             "nature": view["nature"]})
+        tr_list = []
+        for t in trainers:
+            members = t["members"]
+            if t["monSetKind"] == "pool":
+                members = pool_map.get(t["pool"], [])
+            elif t["monSetKind"] == "macro":
+                members = FRLIB.expand_func_pool(
+                    t["pool"], func_pools, pools) or []
+            tr_list.append({"symbol": t["symbol"], "name": t["name"],
+                            "facilityClass": t["facilityClass"],
+                            "pool": t["pool"], "kind": t["monSetKind"],
+                            "count": len(members)})
+        enums = self.frontier_enums()
+        return {"mons": mon_list, "trainers": tr_list,
+                "natures": enums["natures"], "balls": enums["balls"],
+                "pools": [{"name": p["name"], "count": len(p["members"]),
+                           "func": p["name"] in FRLIB.read_func_pools(pools_text)}
+                          for p in pools]}
+
+    def _expand_pool(self, name: str, pools, func_pools=None, depth=0,
+                     seen=None) -> list:
+        seen = seen or set()
+        if depth > 4 or name in seen:
+            return []
+        seen = seen | {name}
+        if "(" in name:
+            import frontier as FRLIB
+            return FRLIB.expand_func_pool(name, func_pools or {}, pools) or []
+        pool = next((p for p in pools if p["name"] == name), None)
+        if pool is None:
+            return []
+        out = []
+        for tok in pool["members"]:
+            if tok.startswith("FRONTIER_MONS_"):
+                out.extend(self._expand_pool(tok, pools, func_pools,
+                                             depth + 1, seen))
+            else:
+                out.append(tok)
+        return out
+
+    def frontier_trainer(self, symbol: str) -> dict:
+        import frontier as FRLIB
+        _, trainers = self._frontier_cached(FRLIB.TRAINERS_FILE)
+        pools_text, pools = self._frontier_cached(FRLIB.POOLS_FILE)
+        func_pools = FRLIB.read_func_pools(pools_text)
+        t = next((x for x in trainers if x["symbol"] == symbol), None)
+        if t is None:
+            raise NativeError("找不到开拓区训练家 %s" % symbol)
+        members = t["members"]
+        if t["monSetKind"] in ("pool", "macro"):
+            members = self._expand_pool(t["pool"], pools, func_pools)
+        return {"symbol": t["symbol"], "name": t["name"],
+                "facilityClass": t["facilityClass"], "kind": t["monSetKind"],
+                "pool": t["pool"], "members": members,
+                "raw": t["monSet"]}
+
+    def frontier_mon(self, symbol: str) -> dict:
+        import frontier as FRLIB
+        _, mons = self._frontier_cached(FRLIB.MONS_FILE)
+        b = next((x for x in mons if x["symbol"] == symbol), None)
+        if b is None:
+            raise NativeError("找不到开拓区宝可梦 %s" % symbol)
+        return FRLIB.mon_view(b)
+
+    def frontier_pool(self, name: str) -> dict:
+        import frontier as FRLIB
+        pools_text, pools = self._frontier_cached(FRLIB.POOLS_FILE)
+        func_pools = FRLIB.read_func_pools(pools_text)
+        p = next((x for x in pools if x["name"] == name), None)
+        if p is None:
+            raise NativeError("找不到池 %s" % name)
+        expansions = {}
+        for tok in p["members"]:
+            if tok.startswith("FRONTIER_MONS_"):
+                expansions[tok] = len(self._expand_pool(tok, pools, func_pools))
+        return {"name": p["name"], "members": p["members"],
+                "expanded": self._expand_pool(name, pools, func_pools),
+                "expansions": expansions,
+                "func": name in func_pools}
+
+    def frontier_abilities(self, species: str) -> dict:
+        """某物种合法的特性候选（读该物种的 .abilities 字段）。"""
+        cache = getattr(self, "_ability_cache", None) or {}
+        if species in cache:
+            return cache[species]
+        doc = self.species(species)
+        raw = (doc.get("fields") or {}).get("abilities", "")
+        m = re.search(r'\{([^}]*)\}', raw)
+        out = []
+        for sym in (m.group(1).split(",") if m else []):
+            sym = sym.strip()
+            if sym and sym != "ABILITY_NONE" and sym not in out:
+                out.append(sym)
+        result = {"species": species, "abilities": out}
+        cache[species] = result
+        self._ability_cache = cache
+        return result
+
+    def add_frontier_mon(self, payload: dict) -> dict:
+        """在开拓区宝可梦表末尾新增一条，并同步常量头文件的编号与总数。"""
+        import frontier as FRLIB
+        species = (payload.get("species") or "").strip()
+        FRLIB.validate_mon_change("species", species)
+        if species not in {x.get("symbol") for x in self.catalog()}:
+            raise NativeError("未知物种 %s（请传 SPECIES_XXX）" % species)
+        const_path = os.path.join(self.project, FRLIB.MONS_CONST_FILE)
+        with open(const_path, "rb") as fh:
+            const_text = fh.read().decode("utf-8")
+        used = set(re.findall(r'#define\s+(FRONTIER_MON_[A-Z0-9_]+)\s+\d+', const_text))
+        base = "FRONTIER_MON_" + species[len("SPECIES_"):]
+        symbol, n = base, 2
+        while symbol in used:
+            symbol = "%s_%d" % (base, n)
+            n += 1
+        moves = [m for m in (payload.get("moves") or []) if m]
+        while len(moves) < 4:
+            moves.append("MOVE_NONE")
+        view = {"species": species, "moves": moves[:4],
+                "heldItem": payload.get("heldItem") or "ITEM_NONE",
+                "ev": payload.get("ev") or [0, 0, 0, 0, 0, 0],
+                "nature": payload.get("nature") or "NATURE_HARDY",
+                "ball": payload.get("ball") or "BALL_POKE",
+                "ability": (payload.get("ability") or "").strip()}
+        FRLIB.validate_mon_change("moves", "{%s}" % ", ".join(view["moves"]))
+        for key in ("heldItem", "nature", "ball", "ability"):
+            if view[key]:
+                FRLIB.validate_mon_change(key, view[key])
+        if view["ability"]:
+            legal = self.frontier_abilities(species)["abilities"]
+            if view["ability"] not in legal:
+                raise NativeError("%s 不是 %s 的合法特性（合法候选：%s）"
+                                  % (view["ability"], species, "、".join(legal) or "无"))
+        mons_path = os.path.join(self.project, FRLIB.MONS_FILE)
+        with open(mons_path, "rb") as fh:
+            mons_text = fh.read().decode("utf-8")
+        new_mons = FRLIB.append_mon(
+            mons_text, FRLIB.format_mon_entry(symbol, view))
+        new_const, index = FRLIB.add_mon_const(const_text, symbol)
+        a = {b["symbol"]: FRLIB.mon_view(b) for b in FRLIB.read_mons(mons_text)}
+        b = {x["symbol"]: FRLIB.mon_view(x) for x in FRLIB.read_mons(new_mons)}
+        if set(b) != set(a) | {symbol}:
+            raise NativeError("新增时条目列表异常，已中止")
+        if any(a[k] != b.get(k) for k in a):
+            raise NativeError("新增时影响了其它条目，已中止")
+        if not re.search(r'#define %s\s+%d\b' % (re.escape(symbol), index), new_const):
+            raise NativeError("常量写入校验失败，已中止")
+        snap = safety.Snapshot(self.project, files=[mons_path, const_path])
+        try:
+            for path, text in ((mons_path, new_mons), (const_path, new_const)):
+                tmp = path + ".ued.tmp"
+                with open(tmp, "wb") as fh:
+                    fh.write(text.encode("utf-8"))
+                os.replace(tmp, path)
+        except Exception as exc:
+            restored = snap.restore()
+            if restored:
+                raise NativeError("%s（已回滚 %d 个文件）" % (exc, restored))
+            raise NativeError(str(exc))
+        self._frontier_cache = {}
+        baks = self._sweep_baks(snap)
+        backup = snap.persist(self.history_dir)
+        self._prune_history()
+        return {"ok": True, "symbol": symbol, "index": index,
+                "cleanedBaks": baks,
+                "changedFiles": [FRLIB.MONS_FILE, FRLIB.MONS_CONST_FILE],
+                "backup": os.path.basename(backup), "warnings": []}
+
+    def _frontier_guard(self, kind: str, rel: str, old_text: str,
+                        new_text: str, symbol: str):
+        """确认这次写入只动了目标条目，其它条目一字未变。"""
+        import frontier as FRLIB
+        if rel == FRLIB.MONS_FILE:
+            a = {b["symbol"]: FRLIB.mon_view(b) for b in FRLIB.read_mons(old_text)}
+            b = {x["symbol"]: FRLIB.mon_view(x) for x in FRLIB.read_mons(new_text)}
+        elif rel == FRLIB.TRAINERS_FILE:
+            def snap(text):
+                out = {}
+                for t in FRLIB.read_trainers(text):
+                    out[t["symbol"]] = (t["monSet"], tuple(t["members"]),
+                                        t["pool"], t["name"])
+                return out
+            a, b = snap(old_text), snap(new_text)
+        else:
+            a = {p["name"]: tuple(p["members"]) for p in FRLIB.read_pools(old_text)}
+            b = {p["name"]: tuple(p["members"]) for p in FRLIB.read_pools(new_text)}
+        if list(a) != list(b):
+            raise NativeError("条目列表被改动（新增或删除），已中止")
+        changed = [k for k in a if a[k] != b[k]]
+        if changed and changed != [symbol]:
+            raise NativeError("波及了其它条目（%s），已中止" % ", ".join(changed[:3]))
+
+    def _frontier_write(self, rel: str, symbol: str, new_text: str,
+                        kind_label: str) -> dict:
+        path = self._frontier_path(rel)
+        with open(path, "rb") as fh:
+            old_text = fh.read().decode("utf-8")
+        if new_text == old_text:
+            return {"ok": True, "skipped": True, "message": "内容没有变化"}
+        snap = safety.Snapshot(self.project, files=[path])
+        try:
+            self._frontier_guard(kind_label, rel, old_text, new_text, symbol)
+            tmp = path + ".ued.tmp"
+            with open(tmp, "wb") as fh:
+                fh.write(new_text.encode("utf-8"))
+            os.replace(tmp, path)
+        except Exception as exc:
+            restored = snap.restore()
+            if restored:
+                raise NativeError("%s（已回滚 %d 个文件）" % (exc, restored))
+            raise NativeError(str(exc))
+        self._frontier_cache = {}
+        baks = self._sweep_baks(snap)
+        backup = snap.persist(self.history_dir)
+        self._prune_history()
+        return {"ok": True, "symbol": symbol, "cleanedBaks": baks,
+                "changedFiles": [os.path.relpath(path, self.project)],
+                "backup": os.path.basename(backup), "warnings": []}
+
+    def save_frontier_mon(self, symbol: str, changes: dict) -> dict:
+        import frontier as FRLIB
+        clean = {}
+        for key, value in (changes or {}).items():
+            if key not in FRLIB.MON_FIELDS and key not in FRLIB.MON_OPTIONAL:
+                raise NativeError("不支持的开拓区字段: %s" % key)
+            if key == "moves":
+                moves = value if isinstance(value, list) else \
+                    FRLIB.parse_moves(str(value))
+                clean[key] = "{%s}" % ", ".join(moves)
+            elif key == "ev":
+                evs = value if isinstance(value, list) else \
+                    FRLIB.parse_ev(str(value))
+                clean[key] = FRLIB.format_ev(evs)
+            else:
+                clean[key] = str(value)
+            FRLIB.validate_mon_change(key, clean[key])
+        if not clean:
+            return {"ok": True, "skipped": True, "message": "没有改动"}
+        text, mons = self._frontier_cached(FRLIB.MONS_FILE)
+        block = next((x for x in mons if x["symbol"] == symbol), None)
+        if block is None:
+            raise NativeError("找不到开拓区宝可梦 %s" % symbol)
+        ability = clean.get("ability")
+        if ability:
+            species = FRLIB.mon_view(block)["species"]
+            legal = self.frontier_abilities(species)["abilities"]
+            if ability not in legal:
+                raise NativeError(
+                    "%s 不是 %s 的合法特性（合法候选：%s）。"
+                    "写进去会让 SetCorrectAbilityNum 触发调试断言。"
+                    % (ability, species, "、".join(legal) or "无"))
+        new_text = FRLIB.apply_mon_changes(text, symbol, clean)
+        return self._frontier_write(FRLIB.MONS_FILE, symbol, new_text, "mons")
+
+    def save_frontier_trainer(self, symbol: str, members) -> dict:
+        import frontier as FRLIB
+        text, _ = self._frontier_cached(FRLIB.TRAINERS_FILE)
+        new_text = FRLIB.apply_trainer_inline(text, symbol, members)
+        return self._frontier_write(FRLIB.TRAINERS_FILE, symbol, new_text,
+                                    "trainers")
+
+    def save_frontier_pool(self, name: str, members) -> dict:
+        import frontier as FRLIB
+        text, _ = self._frontier_cached(FRLIB.POOLS_FILE)
+        new_text = FRLIB.format_pool(text, name, members)
+        return self._frontier_write(FRLIB.POOLS_FILE, name, new_text, "pools")
 
     def check(self) -> dict:
         with STATE_LOCK:
@@ -612,11 +1032,18 @@ class AppState:
         import items as ITEMLIB
         return ITEMLIB.read_enums(self.project)
 
-    def backups(self):
+    def _history_entries(self):
+        """只认 20260101-120000 这种时间戳目录，避免误把杂项当快照。"""
         try:
-            return sorted(os.listdir(self.history_dir))
+            names = os.listdir(self.history_dir)
         except OSError:
             return []
+        return sorted(n for n in names
+                      if re.fullmatch(r"\d{8}-\d{6}", n)
+                      and os.path.isdir(os.path.join(self.history_dir, n)))
+
+    def backups(self):
+        return self._history_entries()
 
 
 STATE: AppState | None = None
@@ -737,6 +1164,30 @@ class Handler(BaseHTTPRequestHandler):
             if not symbol:
                 return self._error("缺少 symbol")
             return self._json({"ok": True, "item": STATE.item(symbol)})
+        if path == "/api/frontier/state":
+            return self._json({"ok": True, "frontier": STATE.frontier_state()})
+        if path == "/api/frontier/mon":
+            symbol = (query.get("symbol") or [""])[0]
+            if not symbol:
+                return self._error("缺少 symbol")
+            return self._json({"ok": True, "mon": STATE.frontier_mon(symbol)})
+        if path == "/api/frontier/trainer":
+            symbol = (query.get("symbol") or [""])[0]
+            if not symbol:
+                return self._error("缺少 symbol")
+            return self._json({"ok": True,
+                               "trainer": STATE.frontier_trainer(symbol)})
+        if path == "/api/frontier/abilities":
+            species = (query.get("species") or [""])[0]
+            if not re.match(r'^SPECIES_[A-Z0-9_]+$', species):
+                return self._error("缺少 species")
+            return self._json({"ok": True,
+                               "abilities": STATE.frontier_abilities(species)})
+        if path == "/api/frontier/pool":
+            name = (query.get("name") or [""])[0]
+            if not name:
+                return self._error("缺少 name")
+            return self._json({"ok": True, "pool": STATE.frontier_pool(name)})
         if path == "/api/backups":
             return self._json({"ok": True, "backups": STATE.backups()})
         return self._error("未知接口 %s" % path, 404)
@@ -761,6 +1212,23 @@ class Handler(BaseHTTPRequestHandler):
             if not symbol:
                 return self._error("缺少 symbol")
             return self._json(STATE.save_item(symbol, changes))
+        if path == "/api/frontier/save":
+            kind = body.get("kind") or ""
+            ident = body.get("symbol") or body.get("name") or ""
+            if not kind or not ident:
+                return self._error("缺少 kind 或 symbol")
+            if kind == "mon":
+                return self._json(STATE.save_frontier_mon(
+                    ident, body.get("changes") or {}))
+            if kind == "trainer":
+                return self._json(STATE.save_frontier_trainer(
+                    ident, body.get("members") or []))
+            if kind == "pool":
+                return self._json(STATE.save_frontier_pool(
+                    ident, body.get("members") or []))
+            return self._error("未知 kind %s" % kind)
+        if path == "/api/frontier/add":
+            return self._json(STATE.add_frontier_mon(body))
         if path == "/api/check":
             return self._json(STATE.check())
         if path == "/api/undo":
