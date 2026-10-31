@@ -19,7 +19,7 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
     },
     [FRONTIER_MON_CATERPIE] = {
         .species = SPECIES_CATERPIE,
-        .moves = {MOVE_TACKLE, MOVE_STRING_SHOT, MOVE_NONE, MOVE_NONE},
+        .moves = {MOVE_TACKLE, MOVE_STRING_SHOT, MOVE_ELECTROWEB, MOVE_NONE},
         .heldItem = ITEM_FOCUS_BAND,
         .ev = TRAINER_PARTY_EVS(252, 252, 0, 0, 0, 0),
         .nature = NATURE_QUIRKY,
@@ -531,10 +531,10 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
     },
     [FRONTIER_MON_PIKACHU] = {
         .species = SPECIES_PIKACHU,
-        .moves = {MOVE_THUNDER_PUNCH, MOVE_THUNDER_WAVE, MOVE_DOUBLE_TEAM, MOVE_QUICK_ATTACK},
+        .moves = {MOVE_VOLT_TACKLE, MOVE_THUNDER_WAVE, MOVE_FAKE_OUT, MOVE_QUICK_ATTACK},
         .heldItem = ITEM_LIGHT_BALL,
-        .ev = TRAINER_PARTY_EVS(252, 0, 0, 252, 0, 0),
-        .nature = NATURE_DOCILE,
+        .ev = TRAINER_PARTY_EVS(6, 252, 0, 0, 0, 252),
+        .nature = NATURE_ADAMANT,
         .ball = BALL_POKE
     },
     [FRONTIER_MON_SANDSHREW] = {
@@ -1996,9 +1996,10 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
     },
     [FRONTIER_MON_CRAWDAUNT_1] = {
         .species = SPECIES_CRAWDAUNT,
-        .moves = {MOVE_BUBBLE_BEAM, MOVE_VISE_GRIP, MOVE_KNOCK_OFF, MOVE_PROTECT},
-        .heldItem = ITEM_PERSIM_BERRY,
-        .ev = TRAINER_PARTY_EVS(170, 0, 170, 0, 0, 170),
+        .moves = {MOVE_CRABHAMMER, MOVE_AQUA_JET, MOVE_KNOCK_OFF, MOVE_PROTECT},
+        .heldItem = ITEM_MYSTIC_WATER,
+        .ability = ABILITY_ADAPTABILITY,
+        .ev = TRAINER_PARTY_EVS(252, 252, 0, 0, 0, 6),
         .nature = NATURE_ADAMANT,
         .ball = BALL_POKE
     },
@@ -2325,8 +2326,9 @@ const struct TrainerMon gBattleFrontierMons[NUM_FRONTIER_MONS] =
     [FRONTIER_MON_WOBBUFFET_2] = {
         .species = SPECIES_WOBBUFFET,
         .moves = {MOVE_COUNTER, MOVE_MIRROR_COAT, MOVE_ENCORE, MOVE_DESTINY_BOND},
-        .heldItem = ITEM_FOCUS_BAND,
-        .ev = TRAINER_PARTY_EVS(0, 0, 252, 0, 0, 252),
+        .heldItem = ITEM_FOCUS_SASH,
+        .ability = ABILITY_SHADOW_TAG,
+        .ev = TRAINER_PARTY_EVS(252, 0, 132, 0, 126, 0),
         .nature = NATURE_CAREFUL,
         .ball = BALL_POKE
     },

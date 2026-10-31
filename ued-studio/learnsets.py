@@ -100,11 +100,72 @@ def find_block(text: str, name: str):
 
 # ---------------------------------------------------------------- 升级招式
 
+GEN_VALUE_RE = re.compile(r"^#define\s+(GEN_(?:LATEST|\d+))\s+(\S+)", re.M)
+CFG_POKEMON = os.path.join("include", "config", "pokemon.h")
+CFG_GENERAL = os.path.join("include", "config", "general.h")
+
+
+def _gen_constants(project: str) -> Dict[str, str]:
+    """读 include/config/general.h 的 GEN_x 数值表（GEN_9 8、GEN_LATEST GEN_9 ...）。"""
+    table: Dict[str, str] = {}
+    path = os.path.join(project, CFG_GENERAL)
+    if not os.path.isfile(path):
+        return table
+    for key, val in GEN_VALUE_RE.findall(_read(path)):
+        table[key] = val
+    return table
+
+
+def resolve_gen(project: str, expr: str) -> Optional[int]:
+    """把配置项的值（GEN_LATEST / GEN_9 / 9）解析成代数字。"""
+    table = _gen_constants(project)
+    name = (expr or "").strip()
+    for _ in range(8):
+        m = re.fullmatch(r"GEN_(\d+)", name)
+        if m:
+            return int(m.group(1))
+        if name.isdigit():
+            return int(name)
+        nxt = table.get(name)
+        if nxt is None:
+            return None
+        name = nxt.strip()
+    return None
+
+
+def active_gen(project: str) -> Optional[int]:
+    """当前工程实际参与编译的升级学习表代数（P_LVL_UP_LEARNSETS）。"""
+    path = os.path.join(project, CFG_POKEMON)
+    if not os.path.isfile(path):
+        return None
+    m = re.search(r"^#define\s+P_LVL_UP_LEARNSETS\s+(\S+)", _read(path), re.M)
+    if not m:
+        return None
+    return resolve_gen(project, m.group(1))
+
+
+def active_levelup_file(project: str) -> Optional[str]:
+    gen = active_gen(project)
+    if gen is None:
+        return None
+    path = os.path.join(project, LEVELUP_DIR, "gen_%d.h" % gen)
+    return path if os.path.isfile(path) else None
+
+
 def _levelup_files(project: str) -> List[str]:
+    """当前代文件排最前，其余按代数倒序兜底（只用于读取）。"""
     d = os.path.join(project, LEVELUP_DIR)
     if not os.path.isdir(d):
         return []
-    return [os.path.join(d, n) for n in sorted(os.listdir(d)) if n.endswith(".h")]
+    names = [n for n in os.listdir(d) if n.endswith(".h")]
+    act = active_levelup_file(project)
+    act_name = os.path.basename(act) if act else None
+    def key(n):
+        if n == act_name:
+            return (0, 0)
+        mm = re.match(r"gen_(\d+)\.h$", n)
+        return (1, -int(mm.group(1)) if mm else -99)
+    return [os.path.join(d, n) for n in sorted(names, key=key)]
 
 
 def read_levelup(project: str, block_name: str) -> Optional[dict]:
@@ -117,7 +178,9 @@ def read_levelup(project: str, block_name: str) -> Optional[dict]:
             continue
         body = text[span[0]:span[1]]
         moves = [{"level": int(lv), "move": mv} for lv, mv in LEVEL_MOVE_RE.findall(body)]
+        act = active_levelup_file(project)
         return {"block": block_name, "file": os.path.relpath(path, project),
+                "active": bool(act) and os.path.abspath(path) == os.path.abspath(act),
                 "moves": moves, "editable": True}
     return None
 
@@ -138,12 +201,20 @@ def _as_move(item) -> str:
     return ""
 
 
+def _level_value(item: Dict[str, object]) -> int:
+    """0 是升级学习表的合法等级（进化/形态专用），只有缺失或空才算 1。"""
+    lv = item.get("level", 1)
+    if lv is None or lv == "":
+        lv = 1
+    return int(lv)
+
+
 def _format_levelup(moves: List[dict]) -> str:
     lines = []
     normalized = [_as_level_move(m) for m in moves]
-    ordered = sorted(enumerate(normalized), key=lambda pair: (int(pair[1]["level"] or 1), pair[0]))
+    ordered = sorted(enumerate(normalized), key=lambda pair: (_level_value(pair[1]), pair[0]))
     for _idx, item in ordered:
-        lv = int(item["level"] or 1)
+        lv = _level_value(item)
         mv = str(item["move"]).strip()
         if not mv.startswith("MOVE_"):
             raise ValueError("招式名不合法: %s" % mv)
@@ -158,18 +229,28 @@ def write_levelup(project: str, block_name: str, moves: List[dict]) -> str:
     if not moves:
         raise ValueError("升级招式不能为空")
     moves = [_as_level_move(m) for m in moves]
-    levels = [int(m["level"] or 1) for m in moves]
-    if min(levels) < 1 or max(levels) > 100:
-        raise ValueError("等级必须在 1..100 之间")
-    for path in _levelup_files(project):
-        text = _read(path)
-        span = find_block(text, block_name)
-        if not span:
-            continue
-        new_text = text[:span[0]] + _format_levelup(moves) + text[span[1]:]
-        _write(path, new_text)
-        return os.path.relpath(path, project)
-    raise ValueError("找不到招式块 %s" % block_name)
+    levels = [_level_value(m) for m in moves]
+    if min(levels) < 0 or max(levels) > 100:
+        raise ValueError("等级必须在 0..100 之间（0 表示进化/形态专用）")
+    # 只允许写当前代文件：其余 gen_*.h 被预处理器排除，写进去游戏里不会生效
+    target = active_levelup_file(project)
+    if target is None:
+        raise ValueError("读不到 P_LVL_UP_LEARNSETS 或缺少对应的 level_up_learnsets/gen_*.h，拒绝盲写")
+    text = _read(target)
+    span = find_block(text, block_name)
+    if not span:
+        raise ValueError("%s 里没有 %s（当前 P_LVL_UP_LEARNSETS 指向 gen_%s.h，"
+                         "写进别的代文件不会生效）"
+                         % (os.path.relpath(target, project), block_name,
+                            (active_gen(project) if active_gen(project) is not None else "?")))
+    new_text = text[:span[0]] + _format_levelup(moves) + text[span[1]:]
+    # 自检：写回结果必须与提交的 (等级, 招式) 多重集完全一致
+    want = sorted((_level_value(m), str(m["move"]).strip()) for m in moves)
+    got = sorted((int(lv), mv) for lv, mv in LEVEL_MOVE_RE.findall(_format_levelup(moves)))
+    if want != got:
+        raise ValueError("升级招式自检失败：写入结果与提交内容不一致，已放弃写入")
+    _write(target, new_text)
+    return os.path.relpath(target, project)
 
 
 # ---------------------------------------------------------------- 蛋招

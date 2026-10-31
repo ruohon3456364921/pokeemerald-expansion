@@ -1086,8 +1086,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_BIG_PECKS] =
     {
         .name = _("健壮胸肌"),
-        .description = COMPOUND_STRING("不会受到防御降低的效果"),
-        .aiRating = 1,
+        .description = COMPOUND_STRING("防御不会被降低，反作用力减半"),
+        .aiRating = 4,
         .breakable = TRUE,
     },
 

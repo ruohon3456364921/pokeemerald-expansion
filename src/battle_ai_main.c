@@ -4028,6 +4028,12 @@ bool32 DoesBattlerKOItselfWithRecoil(enum BattlerId battlerAtk, enum BattlerId b
     if (GetMoveEffect(move) == EFFECT_RECOIL)
         recoilDmg = monHP * GetMoveRecoil(move) / 100; // Recoil damage
 
+    // Big Pecks halves recoil damage.
+    if ((effect == EFFECT_RECOIL || effect == EFFECT_CHLOROBLAST)
+     && recoilDmg > 0
+     && gAiLogicData->abilities[battlerAtk] == ABILITY_BIG_PECKS)
+        recoilDmg = max(1, recoilDmg / 2);
+
     // Does recoil KO attacker
     s32 opposingMons = 0;
     if ((GetConfig(B_MULTI_BATTLE_WHITEOUT) == GEN_3) && BattlerIsPlayer(battlerDef))

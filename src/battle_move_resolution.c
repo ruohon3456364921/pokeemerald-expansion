@@ -4191,15 +4191,17 @@ static enum MoveEndResult MoveEndMoveBlockRecoil(struct BattleCalcValues *cv)
              || IsAbilityAndRecord(cv->battlerAtk, cv->abilities[cv->battlerAtk], ABILITY_MAGIC_GUARD))
                 break;
 
+            s32 recoil;
             if (cv->moveEffect == EFFECT_CHLOROBLAST)
-            {
-                s32 recoil = (GetNonDynamaxMaxHP(cv->battlerAtk) + 1) / 2; // Half of Max HP Rounded UP
-                SetPassiveDamageAmount(cv->battlerAtk, recoil);
-            }
+                recoil = (GetNonDynamaxMaxHP(cv->battlerAtk) + 1) / 2; // Half of Max HP Rounded UP
             else
-            {
-                SetPassiveDamageAmount(cv->battlerAtk, gBattleScripting.savedDmg * max(1, GetMoveRecoil(cv->move)) / 100);
-            }
+                recoil = gBattleScripting.savedDmg * max(1, GetMoveRecoil(cv->move)) / 100;
+
+            // Big Pecks halves recoil damage (weaker version of Rock Head).
+            if (cv->abilities[cv->battlerAtk] == ABILITY_BIG_PECKS && recoil > 0)
+                recoil = max(1, recoil / 2);
+
+            SetPassiveDamageAmount(cv->battlerAtk, recoil);
             TryUpdateEvolutionTracker(IF_RECOIL_DAMAGE_GE, gBattleStruct->passiveHpUpdate[cv->battlerAtk], MOVE_NONE);
             BattleScriptCall(BattleScript_MoveEffectRecoil);
             result = MOVEEND_RESULT_RUN_SCRIPT;

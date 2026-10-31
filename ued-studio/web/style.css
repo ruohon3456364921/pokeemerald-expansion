@@ -240,3 +240,5 @@ aside{
 
 /* 浮层统一挂在 body 上，fixed 定位由 JS 计算 */
 .cb-panel.portal,.combo-list.combo-portal{position:fixed;right:auto}
+
+.warn-note{color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:6px;padding:2px 8px;font-size:12px}
