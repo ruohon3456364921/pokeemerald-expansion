@@ -38,6 +38,8 @@ static bool32 HandleEndTurnOrder(enum BattlerId battler)
         gBattlerByTurnOrder[i] = i;
     SortBattlersBySpeed(gBattlerByTurnOrder, FALSE);
 
+    gBattleStruct->eventState.sporeAirAnnounced = FALSE;
+
     return effect;
 }
 
@@ -1554,6 +1556,104 @@ static bool32 HandleEndTurnDynamax(enum BattlerId battler)
     return effect;
 }
 
+static enum BattlerId GetSporeSourceBattler(enum BattlerId battler)
+{
+    for (enum BattlerId i = 0; i < gBattlersCount; i++)
+    {
+        if (i != battler && IsBattlerAlive(i) && GetBattlerAbility(i) == ABILITY_EFFECT_SPORE)
+            return i;
+    }
+
+    return MAX_BATTLERS_COUNT;
+}
+
+// Spores spread at the end of every turn, affecting every other battler on the field.
+static bool32 HandleEndTurnEffectSpore(enum BattlerId battler)
+{
+    bool32 effect = FALSE;
+    enum BattlerId sporeSource;
+    enum Ability ability;
+    enum MoveEffect moveEffect;
+    u32 i, poison, paralysis, sleep;
+
+    gBattleStruct->eventState.endTurnBattler++;
+
+    if (!IsBattlerAlive(battler))
+        return effect;
+
+    sporeSource = GetSporeSourceBattler(battler);
+    if (sporeSource == MAX_BATTLERS_COUNT)
+        return effect;
+
+    ability = GetBattlerAbility(battler);
+    if (!IsAffectedByPowderMove(battler, ability, GetBattlerHoldEffect(battler)))
+        return effect;
+
+    if (GetConfig(B_ABILITY_TRIGGER_CHANCE) >= GEN_5)
+    {
+        poison = 9;
+        paralysis = 19;
+    }
+    else
+    {
+        poison = 10;
+        paralysis = 20;
+    }
+    sleep = 30;
+
+    i = RandomUniform(RNG_EFFECT_SPORE, 0, GetConfig(B_ABILITY_TRIGGER_CHANCE) >= GEN_4 ? 99 : 299);
+    if (i < poison)
+    {
+        if (!CanBePoisoned(sporeSource, battler, GetBattlerAbility(sporeSource), ability))
+            goto NO_STATUS;
+        moveEffect = MOVE_EFFECT_POISON;
+    }
+    else if (i < paralysis)
+    {
+        if (!CanBeParalyzed(sporeSource, battler, ability))
+            goto NO_STATUS;
+        moveEffect = MOVE_EFFECT_PARALYSIS;
+    }
+    else if (i < sleep)
+    {
+        if (!CanBeSlept(sporeSource, battler, ability, NOT_BLOCKED_BY_SLEEP_CLAUSE))
+            goto NO_STATUS;
+        if (IsSleepClauseEnabled())
+            gBattleStruct->battlerState[battler].sleepClauseEffectExempt = TRUE;
+        moveEffect = MOVE_EFFECT_SLEEP;
+    }
+    else
+    {
+        goto NO_STATUS;
+    }
+
+    gEffectBattler = battler;
+    gBattleScripting.battler = sporeSource;
+    gBattleScripting.moveEffect = moveEffect;
+
+    if (!gBattleStruct->eventState.sporeAirAnnounced)
+    {
+        gBattleStruct->eventState.sporeAirAnnounced = TRUE;
+        BattleScriptCall(BattleScript_EffectSporeAirStatus);
+    }
+    else
+    {
+        BattleScriptCall(BattleScript_EffectSporeStatus);
+    }
+
+    return TRUE;
+
+NO_STATUS:
+    if (!gBattleStruct->eventState.sporeAirAnnounced)
+    {
+        gBattleStruct->eventState.sporeAirAnnounced = TRUE;
+        BattleScriptCall(BattleScript_EffectSporeAir);
+        effect = TRUE;
+    }
+
+    return effect;
+}
+
 static bool32 (*const sEndTurnEffectHandlers[])(enum BattlerId battler) =
 {
     [ENDTURN_ORDER] = HandleEndTurnOrder,
@@ -1565,6 +1665,7 @@ static bool32 (*const sEndTurnEffectHandlers[])(enum BattlerId battler) =
     [ENDTURN_FUTURE_SIGHT] = HandleEndTurnFutureSight,
     [ENDTURN_WISH] = HandleEndTurnWish,
     [ENDTURN_FIRST_EVENT_BLOCK] = HandleEndTurnFirstEventBlock,
+    [ENDTURN_EFFECT_SPORE] = HandleEndTurnEffectSpore,
     [ENDTURN_SEND_OUT_REPLACEMENTS_2] = HandleEndTurnSendOutReplacements,
     [ENDTURN_AQUA_RING] = HandleEndTurnAquaRing,
     [ENDTURN_INGRAIN] = HandleEndTurnIngrain,

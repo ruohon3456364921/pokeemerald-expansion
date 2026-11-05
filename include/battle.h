@@ -582,6 +582,7 @@ struct EventStates
     u32 battlerSwitchIn:8; // SwitchInFirstEventBlock, SwitchInSecondEventBlock
     u32 moveEndBlock:8;
     enum StatChangeResolution resolution:8;
+    u32 sporeAirAnnounced:1;
 };
 
 // Cleared at the beginning of the battle. Fields need to be cleared when needed manually otherwise.

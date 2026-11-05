@@ -4642,6 +4642,12 @@ BattleScript_ShedSkinActivates::
 	updatestatusicon BS_ATTACKER
 	return
 
+BattleScript_ShedSkinCuresStats::
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_SHEDSKINSHEDSTATS
+	waitmessage B_WAIT_TIME_LONG
+	return
+
 BattleScript_ActivateWeatherAbilities:
 	saveattacker
 	savetarget
@@ -5150,6 +5156,25 @@ BattleScript_AbilityStatusEffect::
 	call BattleScript_AbilityPopUp
 	setnonvolatilestatus TRIGGER_ON_ABILITY
 	return
+
+BattleScript_EffectSporeAir::
+	waitstate
+	printstring STRINGID_EFFECTSPOREINTHEAIR
+	waitmessage B_WAIT_TIME_LONG
+	return
+
+BattleScript_EffectSporeAirStatus::
+	waitstate
+	printstring STRINGID_EFFECTSPOREINTHEAIR
+	waitmessage B_WAIT_TIME_LONG
+	setnonvolatilestatus TRIGGER_ON_ABILITY
+	return
+
+BattleScript_EffectSporeStatus::
+	waitstate
+	setnonvolatilestatus TRIGGER_ON_ABILITY
+	return
+
 
 BattleScript_BattleBondActivatesOnMoveEndAttacker::
 	pause 5

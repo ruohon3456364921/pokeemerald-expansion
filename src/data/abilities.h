@@ -212,8 +212,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_EFFECT_SPORE] =
     {
         .name = _("孢子"),
-        .description = COMPOUND_STRING("有时会使接触的对手异常"),
-        .aiRating = 4,
+        .description = COMPOUND_STRING("接触异常，孢子弥漫"),
+        .aiRating = 6,
     },
 
     [ABILITY_SYNCHRONIZE] =
@@ -467,7 +467,7 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_SHED_SKIN] =
     {
         .name = _("蜕皮"),
-        .description = COMPOUND_STRING("有时会治愈异常状态"),
+        .description = COMPOUND_STRING("有时治愈异常与能力下降"),
         .aiRating = 7,
     },
 
@@ -729,8 +729,8 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
     [ABILITY_SNIPER] =
     {
         .name = _("狙击手"),
-        .description = COMPOUND_STRING("击中要害时，威力提升"),
-        .aiRating = 3,
+        .description = COMPOUND_STRING("要害率提升，要害伤害降低"),
+        .aiRating = 6,
     },
 
     [ABILITY_MAGIC_GUARD] =

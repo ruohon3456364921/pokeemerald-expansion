@@ -3662,8 +3662,29 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
                 }
                 break;
             case ABILITY_SHED_SKIN:
+            {
+                u32 i;
+                bool32 hasNegativeStatChanges = FALSE;
+
+                for (i = 0; i < NUM_BATTLE_STATS; i++)
+                {
+                    if (gBattleMons[battler].statStages[i] < DEFAULT_STAT_STAGE)
+                        hasNegativeStatChanges = TRUE;
+                }
+                if (hasNegativeStatChanges && RandomChance(RNG_SHED_SKIN, 1, 2))
+                {
+                    for (i = 0; i < NUM_BATTLE_STATS; i++)
+                    {
+                        if (gBattleMons[battler].statStages[i] < DEFAULT_STAT_STAGE)
+                            gBattleMons[battler].statStages[i] = DEFAULT_STAT_STAGE;
+                    }
+                    gBattleScripting.battler = battler;
+                    BattleScriptCall(BattleScript_ShedSkinCuresStats);
+                    effect++;
+                }
+            }
                 if ((gBattleMons[battler].status1 & STATUS1_ANY)
-                 && (GetConfig(B_ABILITY_TRIGGER_CHANCE) == GEN_4 ? RandomPercentage(RNG_SHED_SKIN, 30) : RandomChance(RNG_SHED_SKIN, 1, 3)))
+                 && RandomChance(RNG_SHED_SKIN, 1, 2))
                 {
                 ABILITY_HEAL_MON_STATUS:
                     if (gBattleMons[battler].status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON))
@@ -7540,7 +7561,7 @@ static inline uq4_12_t GetAttackerAbilitiesModifier(enum BattlerId battlerAtk, u
         break;
     case ABILITY_SNIPER:
         if (isCrit)
-            return UQ_4_12(1.5);
+            return UQ_4_12(0.8);
         break;
     case ABILITY_TINTED_LENS:
         if (typeEffectivenessModifier <= UQ_4_12(0.5))
@@ -8002,6 +8023,7 @@ s32 CalcCritChanceStage(struct DamageContext *ctx)
                     + GetHoldEffectCritChanceIncrease(ctx->battlerAtk, ctx->holdEffects[ctx->battlerAtk])
                     + ((B_AFFECTION_MECHANICS == TRUE && GetBattlerAffectionHearts(ctx->battlerAtk) == AFFECTION_FIVE_HEARTS) ? 2 : 0)
                     + (ctx->abilities[ctx->battlerAtk] == ABILITY_SUPER_LUCK ? 1 : 0)
+                    + (ctx->abilities[ctx->battlerAtk] == ABILITY_SNIPER ? 2 : 0)
                     + gBattleMons[ctx->battlerAtk].volatiles.bonusCritStages;
 
         if (critChance >= ARRAY_COUNT(sCriticalHitOdds))

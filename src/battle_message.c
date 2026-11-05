@@ -456,6 +456,7 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_PKMNSITEMRESTOREDHEALTH]              = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}用{B_LAST_ITEM}\n回复了体力！"),
     [STRINGID_PKMNSITEMRESTOREDPP]                  = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}用{B_LAST_ITEM}\n回复了{B_BUFF1}的PP！"),
     [STRINGID_PKMNSITEMRESTOREDSTATUS]              = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}用{B_LAST_ITEM}\n复原了能力！"),
+    [STRINGID_SHEDSKINSHEDSTATS]                    = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}的能力下降\n被治愈了！"),
     [STRINGID_PKMNSITEMRESTOREDHPALITTLE]           = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}用{B_LAST_ITEM}\n回复了少许HP。"),
     [STRINGID_ITEMALLOWSONLYYMOVE]                  = COMPOUND_STRING("因为{B_LAST_ITEM}的效果，\n只能使出{B_CURRENT_MOVE}！\p"),
     [STRINGID_PKMNHUNGONWITHX]                      = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX}\n用{B_LAST_ITEM}撑住了！"),
@@ -904,6 +905,7 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_S]                                    = COMPOUND_STRING(""),
     [STRINGID_LOSTSOMEOFITSHP]                      = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX}的生命\n被少量削减了！"),
     [STRINGID_BELCHCANTUSE]                         = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX}\n因没有吃树果而无法使出招式！\p"),
+    [STRINGID_EFFECTSPOREINTHEAIR]                  = COMPOUND_STRING("孢子弥漫在空气中！"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

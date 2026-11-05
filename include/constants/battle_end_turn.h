@@ -14,6 +14,7 @@ enum EndTurnResolutionOrder
     ENDTURN_FUTURE_SIGHT,
     ENDTURN_WISH,
     ENDTURN_FIRST_EVENT_BLOCK,
+    ENDTURN_EFFECT_SPORE, // Spores scattered at the end of the turn
     ENDTURN_SEND_OUT_REPLACEMENTS_2, // For Emergency Exit/Wimp Out activations
     ENDTURN_AQUA_RING,
     ENDTURN_INGRAIN,
