@@ -28,18 +28,18 @@ static void CopyFromSaveBlock3(u32, struct SaveSector *);
 /*
  * Sector Layout:
  *
- * Sectors 0 - 13:      Save Slot 1
- * Sectors 14 - 27:     Save Slot 2
+ * Sectors 0 - 20:      Save Slot (single)
+ * Sectors 21 - 27:     Unused / reserved
  * Sectors 28 - 29:     Hall of Fame
  * Sector 30:           Trainer Hill
  * Sector 31:           Recorded Battle
  *
- * There are two save slots for saving the player's game data. We alternate between
- * them each time the game is saved, so that if the current save slot is corrupt,
- * we can load the previous one. We also rotate the sectors in each save slot
- * so that the same data is not always being written to the same sector. This
- * might be done to reduce wear on the flash memory, but I'm not sure, since all
- * 14 sectors get written anyway.
+ * There is a single save slot. NUM_SAVE_SLOTS is 1, so the slot-rotation
+ * expression NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS) is always 0
+ * and the whole game state is rewritten in place. This frees flash sectors for
+ * a 25-box PC storage (16 storage sectors instead of 9).
+ * Trade-off: there is no rollback to a previous save slot, so an interrupted
+ * save can corrupt the only copy.
  *
  * See SECTOR_ID_* constants in save.h
  */
@@ -53,7 +53,10 @@ static void CopyFromSaveBlock3(u32, struct SaveSector *);
 
 struct
 {
-    u16 offset;
+    // u32 rather than u16: a PokemonStorage chunk offset exceeds 65535 once
+    // storage passes 16 sectors, which is only 2 boxes away from the current
+    // 25-box layout. Keeping u32 avoids a silent truncation if it is raised.
+    u32 offset;
     u16 size;
 } static const sSaveSlotLayout[NUM_SECTORS_PER_SLOT] =
 {
@@ -72,7 +75,14 @@ struct
     SAVEBLOCK_CHUNK(struct PokemonStorage, 5),
     SAVEBLOCK_CHUNK(struct PokemonStorage, 6),
     SAVEBLOCK_CHUNK(struct PokemonStorage, 7),
-    SAVEBLOCK_CHUNK(struct PokemonStorage, 8), // SECTOR_ID_PKMN_STORAGE_END
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 8),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 9),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 10),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 11),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 12),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 13),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 14),
+    SAVEBLOCK_CHUNK(struct PokemonStorage, 15), // SECTOR_ID_PKMN_STORAGE_END
 };
 
 // These will produce an error if a save struct is larger than the space
@@ -560,6 +570,7 @@ static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations)
     validSectorFlags = 0;
     signatureValid = FALSE;
 
+#if NUM_SAVE_SLOTS > 1
     // Check save slot 2
     for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
     {
@@ -588,6 +599,12 @@ static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations)
         // No sectors in slot 2 have the correct signature, treat it as empty.
         saveSlot2Status = SAVE_STATUS_EMPTY;
     }
+#else
+    // Single save slot: there is no second slot to fall back to. Treat it as
+    // empty so that the logic below selects the (only) slot 1 data.
+    (void)saveSlot2Counter;
+    saveSlot2Status = SAVE_STATUS_EMPTY;
+#endif
 
     if (saveSlot1Status == SAVE_STATUS_OK && saveSlot2Status == SAVE_STATUS_OK)
     {
