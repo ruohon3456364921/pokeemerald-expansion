@@ -28,8 +28,8 @@ static void CopyFromSaveBlock3(u32, struct SaveSector *);
 /*
  * Sector Layout:
  *
- * Sectors 0 - 20:      Save Slot (single)
- * Sectors 21 - 27:     Unused / reserved
+ * Sectors 0 - 21:      Save Slot (single)
+ * Sectors 22 - 27:     Unused / reserved
  * Sectors 28 - 29:     Hall of Fame
  * Sector 30:           Trainer Hill
  * Sector 31:           Recorded Battle
@@ -37,7 +37,8 @@ static void CopyFromSaveBlock3(u32, struct SaveSector *);
  * There is a single save slot. NUM_SAVE_SLOTS is 1, so the slot-rotation
  * expression NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS) is always 0
  * and the whole game state is rewritten in place. This frees flash sectors for
- * a 25-box PC storage (16 storage sectors instead of 9).
+ * a 25-box PC storage (16 storage sectors instead of 9) and a 5-sector
+ * SaveBlock1 (one extra sector for the 120-item bag).
  * Trade-off: there is no rollback to a previous save slot, so an interrupted
  * save can corrupt the only copy.
  *
@@ -65,7 +66,8 @@ struct
     SAVEBLOCK_CHUNK(struct SaveBlock1, 0), // SECTOR_ID_SAVEBLOCK1_START
     SAVEBLOCK_CHUNK(struct SaveBlock1, 1),
     SAVEBLOCK_CHUNK(struct SaveBlock1, 2),
-    SAVEBLOCK_CHUNK(struct SaveBlock1, 3), // SECTOR_ID_SAVEBLOCK1_END
+    SAVEBLOCK_CHUNK(struct SaveBlock1, 3),
+    SAVEBLOCK_CHUNK(struct SaveBlock1, 4), // SECTOR_ID_SAVEBLOCK1_END
 
     SAVEBLOCK_CHUNK(struct PokemonStorage, 0), // SECTOR_ID_PKMN_STORAGE_START
     SAVEBLOCK_CHUNK(struct PokemonStorage, 1),
